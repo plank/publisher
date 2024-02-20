@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Plank\Publisher\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class PublisherCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'publisher';
 
     public $description = 'My command';
 
