@@ -2,9 +2,10 @@
 
 namespace Plank\Publisher;
 
+use Illuminate\Support\Facades\Gate;
+use Plank\Publisher\Repositories\PublisherRepository;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Plank\Publisher\Commands\PublisherCommand;
 
 class PublisherServiceProvider extends PackageServiceProvider
 {
@@ -15,11 +16,22 @@ class PublisherServiceProvider extends PackageServiceProvider
          *
          * More info: https://github.com/spatie/laravel-package-tools
          */
-        $package
-            ->name('publisher')
-            ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_publisher_table')
-            ->hasCommand(PublisherCommand::class);
+        $package->name('publisher');
+
+        if (! $this->app->bound('publisher')) {
+            $this->app->scoped('publisher', fn () => new PublisherRepository);
+        }
+
+        if (! Gate::has('publishing')) {
+            Gate::define('publishing', function ($user, $model) {
+                return $user !== null;
+            });
+        }
+
+        if (! Gate::has('unpublishing')) {
+            Gate::define('unpublishing', function ($user, $model) {
+                return $user !== null;
+            });
+        }
     }
 }

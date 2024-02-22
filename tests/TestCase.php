@@ -3,8 +3,10 @@
 namespace Plank\Publisher\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Auth;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Plank\Publisher\PublisherServiceProvider;
+use Plank\Publisher\Tests\Helpers\Models\User;
 
 class TestCase extends Orchestra
 {
@@ -13,8 +15,17 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Plank\\Publisher\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Plank\\Publisher\\Tests\\Helper\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
+
+        $this->artisan('migrate', [
+            '--path' => realpath(__DIR__.'/Helpers/Database/Migrations'),
+            '--realpath' => true,
+        ])->run();
+
+        Auth::setUser(User::create([
+            'name' => 'Admin',
+        ]));
     }
 
     protected function getPackageProviders($app)
@@ -26,11 +37,7 @@ class TestCase extends Orchestra
 
     public function getEnvironmentSetUp($app)
     {
-        config()->set('database.default', 'testing');
-
-        /*
-        $migration = include __DIR__.'/../database/migrations/create_publisher_table.php.stub';
-        $migration->up();
-        */
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('publisher', include_once __DIR__.'/../config/publisher.php');
     }
 }
