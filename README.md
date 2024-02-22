@@ -1,19 +1,29 @@
-# A workflow for publishing content in Laravel applications.
+<p align="center"><a href="https://plank.co"><img src="art/publisher.png" width="100%"></a></p>
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/publisher.svg?style=flat-square)](https://packagist.org/packages/plank/publisher)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/plank/publisher/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/plank/publisher/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/plank/publisher/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/plank/publisher/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/plank/publisher.svg?style=flat-square)](https://packagist.org/packages/plank/publisher)
+<p align="center">
+<a href="https://packagist.org/packages/plank/publisher"><img src="https://img.shields.io/packagist/php-v/plank/publisher?color=%23fae370&label=php&logo=php&logoColor=%23fff" alt="PHP Version Support"></a>
+<a href="https://github.com/plank/publisher/actions?query=workflow%3Arun-tests"><img src="https://img.shields.io/github/actions/workflow/status/plank/publisher/run-tests.yml?branch=main&&color=%23bfc9bd&label=run-tests&logo=github&logoColor=%23fff" alt="GitHub Workflow Status"></a>
+<a href="https://codeclimate.com/github/plank/publisher/test_coverage"><img src="https://img.shields.io/codeclimate/coverage/plank/publisher?color=%23ff9376&label=test%20coverage&logo=code-climate&logoColor=%23fff" /></a>
+<a href="https://codeclimate.com/github/plank/publisher/maintainability"><img src="https://img.shields.io/codeclimate/maintainability/plank/publisher?color=%23528cff&label=maintainablility&logo=code-climate&logoColor=%23fff" /></a>
+</p>
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+# Laravel Publisher
 
-## Support us
+:warning: Package is under active development. Wait for v1.0.0 for production use. :warning:
 
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/publisher.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/publisher)
+Publisher is...
 
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
+## Table of Contents
 
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [Credits](#credits)
+- [License](#license)
+- [Security Vulnerabilities](#security-vulnerabilities)
+
+&nbsp;
 
 ## Installation
 
@@ -23,62 +33,62 @@ You can install the package via composer:
 composer require plank/publisher
 ```
 
-You can publish and run the migrations with:
+You can use the package's install command to complete the installation:
 
 ```bash
-php artisan vendor:publish --tag="publisher-migrations"
-php artisan migrate
+php artisan publisher:install
 ```
 
-You can publish the config file with:
+## Quick Start
+
+Once the installation has completed, to begin using the package:
+
+&nbsp;
+
+## Configuration
+
+The package's configuration file is located at `config/publisher.php`. If you did not publish the config file during installation, you can publish the configuration file using the following command:
 
 ```bash
-php artisan vendor:publish --tag="publisher-config"
+php artisan vendor:publish --provider="Plank\Publisher\PublisherServiceProvider" --tag="config"
 ```
 
-This is the contents of the published config file:
+&nbsp;
 
-```php
-return [
-];
-```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="publisher-views"
-```
-
-## Usage
-
-```php
-$publisher = new Plank\Publisher();
-echo $publisher->echoPhrase('Hello, Plank!');
-```
-
-## Testing
-
-```bash
-composer test
-```
-
-## Changelog
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+&nbsp;
 
 ## Credits
 
 - [Kurt Friars](https://github.com/kfriars)
+- [Massimo Triassi](https://github.com/m-triassi)
+- [Andrew Hanichkovsky](https://github.com/a-drew)
 - [All Contributors](../../contributors)
+
+&nbsp;
 
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+&nbsp;
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within siren, please send an e-mail to [security@plank.co](mailto:security@plank.co). All security vulnerabilities will be promptly addressed.
+
+&nbsp;
+
+## Check Us Out!
+
+<a href="https://plank.co/open-source/learn-more-image">
+    <img src="https://plank.co/open-source/banner">
+</a>
+
+&nbsp;
+
+Plank focuses on impactful solutions that deliver engaging experiences to our clients and their users. We're committed to innovation, inclusivity, and sustainability in the digital space. [Learn more](https://plank.co/open-source/learn-more-link) about our mission to improve the web.
