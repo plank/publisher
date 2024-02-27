@@ -2,8 +2,10 @@
 
 namespace Plank\Publisher\Concerns;
 
+use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Scopes\PublisherScope;
@@ -15,33 +17,47 @@ use Plank\Publisher\Scopes\PublisherScope;
  */
 trait QueriesPublishableModels
 {
-    public function onlyPublished(): self
+    public function onlyPublished(): PublisherBuilder
     {
         return $this->withoutGlobalScope(PublisherScope::class)
             ->where($this->model->hasBeenPublishedColumn(), true);
     }
 
-    public function onlyDraft(): self
+    public function onlyDraft(): PublisherBuilder
     {
         return $this->withoutGlobalScope(PublisherScope::class)
             ->whereNot($this->model->workflowColumn(), $this->model->publishedState());
     }
 
-    public function withDraft(): self
-    {
-        return $this->withoutGlobalScope(PublisherScope::class);
-    }
-
     public function where($column, $operator = null, $value = null, $boolean = 'and')
     {
+        if ($column instanceof Closure && is_null($operator)) {
+            return parent::where($column, $operator, $value, $boolean);
+        }
+
         if (! $this->shouldUseDraftColumn($column)) {
             return parent::where($column, $operator, $value, $boolean);
         }
 
-        return parent::where(function ($query) use ($column, $operator, $value, $boolean) {
-            return $query->where($column, $operator, $value, $boolean)
-                ->orWhere($this->model->draftColumn().'->'.$column, $operator, $value, $boolean);
-        });
+        return $this->draftAllowedQuery($this->query, $column, $operator, $value, $boolean);
+    }
+
+    protected function draftAllowedQuery($query, $column, $operator = null, $value = null, $boolean = 'and')
+    {
+        return $query->where(fn ($query) => $this->publishedWhere($query, $column, $operator, $value, $boolean))
+            ->orWhere(fn ($query) => $this->unpublishedWhere($query, $column, $operator, $value, $boolean));
+    }
+
+    protected function publishedWhere($query, $column, $operator = null, $value = null, $boolean = 'and')
+    {
+        return $query->where($this->model->workflowColumn(), $this->model->publishedState())
+            ->where($column, $operator, $value, $boolean);
+    }
+
+    protected function unpublishedWhere($query, $column, $operator = null, $value = null, $boolean = 'and')
+    {
+        return $query->whereNot($this->model->workflowColumn(), $this->model->publishedState())
+            ->where($this->model->draftColumn().'->'.$column, $operator, $value, $boolean);
     }
 
     protected function shouldUseDraftColumn(string $column): bool
