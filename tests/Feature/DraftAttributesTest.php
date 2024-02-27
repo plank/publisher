@@ -1,7 +1,12 @@
 <?php
 
+use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
+
+beforeEach(function () {
+    Publisher::allowDraftContent();
+});
 
 it('puts attributes in columns and draft when a model is created in `draft`', function () {
     $post = Post::create([
