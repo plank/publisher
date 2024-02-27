@@ -43,6 +43,12 @@ php artisan publisher:install
 
 Once the installation has completed, to begin using the package:
 
+1. Add the `Plank\Publisher\Concerns\IsPublishable` trait and the `Plank\Publisher\Contracts\Publishable` interface to the models you want to respect the publishing workflow.
+
+2. Add the [publisher columns](#migrations) to the tables for those models.
+3. Create middleware[s] which will determine when draft content should be visible.
+
+```php
 &nbsp;
 
 ## Configuration
