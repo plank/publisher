@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Plank\Publisher\PublisherServiceProvider;
 use Plank\Publisher\Tests\Helpers\Models\User;
+use Tests\Helpers\Controllers\PostController;
 
 class TestCase extends Orchestra
 {
@@ -38,6 +39,6 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app)
     {
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('publisher', include_once __DIR__.'/../config/publisher.php');
+        $app['router']->get('posts/{id}', [PostController::class, 'show'])->name('posts.show');
     }
 }

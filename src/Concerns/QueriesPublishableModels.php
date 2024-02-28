@@ -5,8 +5,8 @@ namespace Plank\Publisher\Concerns;
 use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
+use Plank\Publisher\Contracts\PublisherQueries;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Scopes\PublisherScope;
 
@@ -17,13 +17,13 @@ use Plank\Publisher\Scopes\PublisherScope;
  */
 trait QueriesPublishableModels
 {
-    public function onlyPublished(): PublisherBuilder
+    public function onlyPublished(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
             ->where($this->model->hasBeenPublishedColumn(), true);
     }
 
-    public function onlyDraft(): PublisherBuilder
+    public function onlyDraft(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
             ->whereNot($this->model->workflowColumn(), $this->model->publishedState());

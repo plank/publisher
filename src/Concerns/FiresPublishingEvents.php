@@ -69,12 +69,12 @@ trait FiresPublishingEvents
     public function firePublishing(): void
     {
         $this->fireModelEvent('publishing');
-        $this->wasPublished = true;
     }
 
     public function fireAfterPublishing(): void
     {
         $this->fireModelEvent('afterPublishing');
+        $this->wasPublished = true;
     }
 
     public function fireBeforeUnpublishing(): void
@@ -85,12 +85,12 @@ trait FiresPublishingEvents
     public function fireUnpublishing(): void
     {
         $this->fireModelEvent('unpublishing');
-        $this->wasUnpublished = true;
     }
 
     public function fireAfterUnpublishing(): void
     {
         $this->fireModelEvent('afterUnpublishing');
+        $this->wasUnpublished = true;
     }
 
     public function fireBeforePublished(): void
@@ -101,12 +101,12 @@ trait FiresPublishingEvents
     public function firePublished(): void
     {
         $this->fireModelEvent('published');
-        $this->wasPublished = false;
     }
 
     public function fireAfterPublished(): void
     {
         $this->fireModelEvent('afterPublished');
+        $this->wasPublished = false;
     }
 
     public function fireBeforeUnpublished(): void
@@ -117,12 +117,12 @@ trait FiresPublishingEvents
     public function fireUnpublished(): void
     {
         $this->fireModelEvent('unpublished');
-        $this->wasUnpublished = false;
     }
 
     public function fireAfterUnpublished(): void
     {
         $this->fireModelEvent('afterUnpublished');
+        $this->wasUnpublished = false;
     }
 
     public function fireBeforeDrafting(): void
@@ -133,12 +133,12 @@ trait FiresPublishingEvents
     public function fireDrafting(): void
     {
         $this->fireModelEvent('drafting');
-        $this->wasDrafted = true;
     }
 
     public function fireAfterDrafting(): void
     {
         $this->fireModelEvent('afterDrafting');
+        $this->wasDrafted = true;
     }
 
     public function fireBeforeUndrafting(): void
@@ -149,12 +149,12 @@ trait FiresPublishingEvents
     public function fireUndrafting(): void
     {
         $this->fireModelEvent('undrafting');
-        $this->wasUndrafted = true;
     }
 
     public function fireAfterUndrafting(): void
     {
         $this->fireModelEvent('afterUndrafting');
+        $this->wasUndrafted = true;
     }
 
     public function fireBeforeDrafted(): void
@@ -165,12 +165,12 @@ trait FiresPublishingEvents
     public function fireDrafted(): void
     {
         $this->fireModelEvent('drafted');
-        $this->wasDrafted = false;
     }
 
     public function fireAfterDrafted(): void
     {
         $this->fireModelEvent('afterDrafted');
+        $this->wasDrafted = false;
     }
 
     public function fireBeforeUndrafted(): void
@@ -181,12 +181,12 @@ trait FiresPublishingEvents
     public function fireUndrafted(): void
     {
         $this->fireModelEvent('undrafted');
-        $this->wasUndrafted = false;
     }
 
     public function fireAfterUndrafted(): void
     {
         $this->fireModelEvent('afterUndrafted');
+        $this->wasUndrafted = false;
     }
 
     public static function beforePublishing(callable $callback): void

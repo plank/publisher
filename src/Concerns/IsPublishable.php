@@ -24,7 +24,7 @@ trait IsPublishable
 
         static::saving(function (Publishable&Model $model) {
             if ($model->isBeingPublished()) {
-                if (Gate::denies('publishing', $model)) {
+                if (! Gate::authorize('publish', $model)) {
                     return false;
                 }
 
@@ -32,7 +32,7 @@ trait IsPublishable
                 $model->firePublishing();
                 $model->fireAfterPublishing();
             } elseif ($model->isBeingUnpublished()) {
-                if (Gate::denies('unpublishing', $model)) {
+                if (! Gate::authorize('unpublish', $model)) {
                     return false;
                 }
 
@@ -41,7 +41,6 @@ trait IsPublishable
                 $model->fireAfterUnpublishing();
             }
 
-            // Do not undraft if we are currently ublishing
             if ($model->shouldBeDrafted()) {
                 $model->fireBeforeDrafting();
                 $model->fireDrafting();
