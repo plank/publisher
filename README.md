@@ -11,13 +11,21 @@
 
 :warning: Package is under active development. Wait for v1.0.0 for production use. :warning:
 
-Publisher is...
+Publisher is a package aimed at providing a simple and flexible way to manage the publishing workflow of content in a Laravel application. It is designed to be used with any type of content, such as blog posts, pages, or any other type of content that may require a publishing workflow.
+
+A key requirement Publisher aims to solve, is the ability to work on existing content without the changes being visible to your site's regular users until the changes are ready to be published, without the existing published version going missing from your site.
+
+In Version 2+, Publisher will also provide the ability to manage relationships to content that is in a draft state without that related draft content being visible to your site's regular users.
 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Quick Start](#quick-start)
 - [Configuration](#configuration)
+  - [Migration Columns](#migration-columns)
+  - [Middleware](#middleware)
+  - [URL Rewriting](#url-rewriting)
+  - [Admin Panel](#admin-panel)
+  - [Gates & Abilities](#gates--abilities)
 - [Contributing](#contributing)
 - [Credits](#credits)
 - [License](#license)
@@ -27,28 +35,20 @@ Publisher is...
 
 ## Installation
 
-You can install the package via composer:
+1. You can install the package via composer:
 
-```bash
-composer require plank/publisher
-```
+    ```bash
+    composer require plank/publisher
+    ```
 
-You can use the package's install command to complete the installation:
+2. Add the `Plank\Publisher\Concerns\IsPublishable` trait and the `Plank\Publisher\Contracts\Publishable` interface to the models you want to respect the publishing workflow.
 
-```bash
-php artisan publisher:install
-```
+3. Use the package's install command to complete the installation:
 
-## Quick Start
+    ```bash
+    php artisan publisher:install
+    ```
 
-Once the installation has completed, to begin using the package:
-
-1. Add the `Plank\Publisher\Concerns\IsPublishable` trait and the `Plank\Publisher\Contracts\Publishable` interface to the models you want to respect the publishing workflow.
-
-2. Add the [publisher columns](#migrations) to the tables for those models.
-3. Create middleware[s] which will determine when draft content should be visible.
-
-```php
 &nbsp;
 
 ## Configuration
@@ -59,8 +59,78 @@ The package's configuration file is located at `config/publisher.php`. If you di
 php artisan vendor:publish --provider="Plank\Publisher\PublisherServiceProvider" --tag="config"
 ```
 
+### Migration Columns
+
+Each Publishable Model requires 3 columns on their table to function properly:
+
+1. `workflow`
+   - The workflow columns stores the current state of the model. Whether is is currently published, or being worked on as a draft.
+2. `draft`
+   - The draft column stores the working values of the attributes in a json column
+3. `has_been_published`
+   - The has_been_published column stores a boolean value to indicate if the model has ever been published.
+
+As a further note, you could in theory extend the values of the `workflow` column to include more states, such as "in_review". However, there are two important states that are required for the package to function properly: a "published" state, and an "unpublished" state. These states are configurable in the `IsPublishable` trait, by overriding the `publishedState` and `unpublishedState` methods.
+
+Whenever a model is transitioned to the "published" state, the `has_been_published` column is set to `true`, and the model is considered to have been published.
+
+Whenever a model is transitioned out of the "published" state, changes to the model's attributes will be persisted to the `draft` column, and the `workflow` column will be set to the "unpublished" state.
+
 &nbsp;
 
+### Middleware
+
+The package provides a middleware that can be enabled to toggle the visiblity of draft content in the application. This is useful for allowing specific users to preview draft content in a production environment.
+
+You can disable the packages middleware and create your own by setting the `middleware.enabled` key to `false` in the configuration file.
+
+If you are using the package's middleware, you can choose if you would like it to be enabled as global middleware or route middleware by setting the `middleware.global` key to `true` or `false` respectively.
+
+&nbsp;
+
+### URL Rewriting
+
+This package provides an opt-out feature which overrides all URL generation done by the frameworks methods like `url()` and `route()` to preserve the current visiblity of the draft content.
+
+You can disable the feature by setting the `urls.rewrite` key to `false` in the configuration file.
+
+You can also configure the GET query parameter used to signify the site should display draft content by setting the `urls.previewKey` key to the desired value.
+
+When the value configured in `previewKey` is present in the GET query, AND the user has the `Gate` ability to `view-draft-content`, the package will allow draft content and rewrite all urls to include the `previewKey`.
+
+&nbsp;
+
+### Admin Panel
+
+It is assumed that your Admin panel should always allow draft content to be visible. If you are using the package's middleware, you can specify the route prefix of your admin panel by setting the `admin.path` key in the configuration file.
+
+When this key is set all routes that start with the specified prefix will always have draft content enabled.
+
+&nbsp;
+
+### Gates & Abilities
+
+All gates defined on the package can be overriden in your app by defining the gate with the same name in an Application Service Provider.
+
+The package implementation of all gates is as follows:
+
+```php
+Gate::define('publish', function ($user, $model) {
+    return $user !== null;
+});
+```
+
+#### publish
+
+This gate is used to determine if a user has the ability to publish a model. By default, the gate is defined as follows:
+
+#### unpublish
+
+This gate is used to determine if a user has the ability to unpublish a model. By default, the gate is defined as follows:
+
+#### view-draft-content
+
+This gate is used to determine if a user has the ability to view draft content. By default, the gate is defined as follows:
 
 ## Contributing
 
