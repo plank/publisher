@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report an Issue or Bug with the Package
-title: "[Bug]: "
-labels: ["bug"]
+title: "[Issue]: "
+labels: ["issue"]
 body:
     - type: markdown
       attributes:
@@ -39,14 +39,6 @@ body:
           placeholder: 8.2.0
       validations:
           required: true
-    - type: input
-      id: laravel-version
-      attributes:
-        label: Laravel Version
-        description: What version of Laravel are you running? Please be as specific as possible
-        placeholder: 9.0.0
-      validations:
-        required: true
     - type: dropdown
       id: operating-systems
       attributes:
