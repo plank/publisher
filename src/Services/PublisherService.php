@@ -57,7 +57,8 @@ class PublisherService
             ->filter(fn (string $className) => class_exists($className))
             ->filter(function (string $class) {
                 return is_a($class, Model::class, true)
-                    && is_a($class, Publishable::class, true);
+                    && is_a($class, Publishable::class, true)
+                    && ! (new \ReflectionClass($class))->isAbstract();
             })
             ->map(fn ($class) => new $class)
             ->values();
