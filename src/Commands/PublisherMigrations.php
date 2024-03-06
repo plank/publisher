@@ -62,19 +62,19 @@ class PublisherMigrations extends Command
         return new class extends Migration {
             public function up(): void
             {
-                Schema::table("$tableName", function (Blueprint \$table) {
-                    \$table->json("$draftColumn")->before('created_at')->nullable();
-                    \$table->string("$workflowColumn")->before("$draftColumn")->default("$unpublishedState");
-                    \$table->boolean("$hasBeenPublishedColumn")->before("$workflowColumn")->default(false);
+                Schema::table('$tableName', function (Blueprint \$table) {
+                    \$table->json('$draftColumn')->before('created_at')->nullable();
+                    \$table->string('$workflowColumn')->before('$draftColumn')->default('$unpublishedState');
+                    \$table->boolean('$hasBeenPublishedColumn')->before('$workflowColumn')->default(false);
                 });
             }
 
             public function down(): void
             {
-                Schema::table("$tableName", function (Blueprint \$table) {
-                    \$table->dropColumn("$workflowColumn");
-                    \$table->dropColumn("$draftColumn");
-                    \$table->dropColumn("$hasBeenPublishedColumn");
+                Schema::table('$tableName', function (Blueprint \$table) {
+                    \$table->dropColumn('$workflowColumn');
+                    \$table->dropColumn('$draftColumn');
+                    \$table->dropColumn('$hasBeenPublishedColumn');
                 });
             }
         };
