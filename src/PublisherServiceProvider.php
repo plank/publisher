@@ -123,9 +123,9 @@ class PublisherServiceProvider extends PackageServiceProvider
             return $this;
         }
 
-        if (config('publisher.middleware.global') === true) {
+        if ($group = config('publisher.middleware.group')) {
             $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
-                ->pushMiddleware(PublisherMiddleware::class);
+                ->appendMiddlewareToGroup($group, PublisherMiddleware::class);
         } else {
             $this->app['router']->aliasMiddleware('publisher', PublisherMiddleware::class);
         }

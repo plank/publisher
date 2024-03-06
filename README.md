@@ -82,9 +82,9 @@ Whenever a model is transitioned out of the "published" state, changes to the mo
 
 The package provides a middleware that can be enabled to toggle the visiblity of draft content in the application. This is useful for allowing specific users to preview draft content in a production environment.
 
-You can disable the packages middleware and create your own by setting the `middleware.enabled` key to `false` in the configuration file.
+You can disable the package's middleware and create your own by setting the `middleware.enabled` key to `false` in the configuration file.
 
-If you are using the package's middleware, you can choose if you would like it to be enabled as global middleware or route middleware by setting the `middleware.global` key to `true` or `false` respectively.
+If you are using the package's middleware, you can choose if you would like it to be enabled on a middleware group or as route middleware by setting the `middleware.group` key to the name of the group (ie: `web`) or `false` respectively.
 
 &nbsp;
 

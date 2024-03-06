@@ -8,7 +8,7 @@ return [
     ],
     'middleware' => [
         'enabled' => true,
-        'global' => true,
+        'group' => false,
     ],
     'urls' => [
         'rewrite' => true,
