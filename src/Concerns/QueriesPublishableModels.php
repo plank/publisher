@@ -39,7 +39,9 @@ trait QueriesPublishableModels
             return parent::where($column, $operator, $value, $boolean);
         }
 
-        return $this->draftAllowedQuery($this->query, $column, $operator, $value, $boolean);
+        $this->draftAllowedQuery($this->query, $column, $operator, $value, $boolean);
+
+        return $this;
     }
 
     protected function draftAllowedQuery($query, $column, $operator = null, $value = null, $boolean = 'and')
