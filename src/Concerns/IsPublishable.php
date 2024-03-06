@@ -18,6 +18,11 @@ trait IsPublishable
     use FiresPublishingEvents;
     use HasPublishableAttributes;
 
+    public function initializeIsPublishable()
+    {
+        $this->attributes[$this->workflowColumn()] ??= $this->unpublishedState();
+    }
+
     public static function bootIsPublishable()
     {
         static::addGlobalScope(new PublisherScope);
