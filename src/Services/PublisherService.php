@@ -17,7 +17,7 @@ class PublisherService
 
     public function shouldEnableDraftContent(Request $request): bool
     {
-        if ($this->shouldCheckGate() && Gate::denies('view-draft-content')) {
+        if (! $this->shouldCheckGate() || Gate::denies('view-draft-content')) {
             return false;
         }
 
@@ -30,14 +30,14 @@ class PublisherService
 
     public function canPublish(Publishable&Model $model): bool
     {
-        return $this->shouldCheckGate()
-            && Gate::authorize('publish', $model);
+        return ! $this->shouldCheckGate()
+            || Gate::authorize('publish', $model);
     }
 
     public function canUnpublish(Publishable&Model $model): bool
     {
-        return $this->shouldCheckGate()
-            && Gate::authorize('unpublish', $model);
+        return ! $this->shouldCheckGate()
+            || Gate::authorize('unpublish', $model);
     }
 
     protected function shouldCheckGate(): bool
