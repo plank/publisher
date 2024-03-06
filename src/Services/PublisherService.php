@@ -69,6 +69,6 @@ class PublisherService
         return str($modelFile->getRelativePathname())
             ->replace(DIRECTORY_SEPARATOR, '\\')
             ->replace('.php', '')
-            ->prepend('App/');
+            ->prepend('App\\');
     }
 }
