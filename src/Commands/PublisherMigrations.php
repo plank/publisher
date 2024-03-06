@@ -63,9 +63,9 @@ class PublisherMigrations extends Command
             public function up(): void
             {
                 Schema::table('$tableName', function (Blueprint \$table) {
-                    \$table->json('$draftColumn')->before('created_at')->nullable();
-                    \$table->string('$workflowColumn')->before('$draftColumn')->default('$unpublishedState');
-                    \$table->boolean('$hasBeenPublishedColumn')->before('$workflowColumn')->default(false);
+                    \$table->json('$draftColumn')->nullable();
+                    \$table->string('$workflowColumn')->default('$unpublishedState');
+                    \$table->boolean('$hasBeenPublishedColumn')->default(false);
                 });
             }
 

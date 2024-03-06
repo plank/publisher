@@ -3,7 +3,6 @@
 namespace Plank\Publisher;
 
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Gate;
 use Plank\Publisher\Commands\PublisherMigrations;
 use Plank\Publisher\Middleware\PublisherMiddleware;
@@ -51,7 +50,6 @@ class PublisherServiceProvider extends PackageServiceProvider
         $this->bindService()
             ->defineGates()
             ->overrideUrlGenerator()
-            ->thisAddBlueprintMacro()
             ->registerMiddleware();
     }
 
@@ -114,37 +112,6 @@ class PublisherServiceProvider extends PackageServiceProvider
             });
 
             return $url;
-        });
-
-        return $this;
-    }
-
-    protected function thisAddBlueprintMacro(): self
-    {
-        Blueprint::macro('before', function ($columnName, $newColumnName, $type = 'string', $length = null) {
-            /** @var Blueprint $this */
-            $columns = $this->columns;
-            $targetIndex = null;
-
-            foreach ($columns as $index => $column) {
-                if ($column['name'] === $columnName) {
-                    $targetIndex = $index;
-                    break;
-                }
-            }
-
-            // Create a new column definition
-            $newColumn = $this->addColumn($type, $newColumnName, compact('length'));
-
-            // If target column is found, adjust the order
-            if ($targetIndex !== null) {
-                array_splice($this->columns, $targetIndex, 0, [$newColumn]);
-            } else {
-                // If target column not found, just add the column (you might want to handle this differently)
-                $this->columns[] = $newColumn;
-            }
-
-            return $newColumn;
         });
 
         return $this;
