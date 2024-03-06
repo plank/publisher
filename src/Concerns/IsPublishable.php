@@ -3,9 +3,9 @@
 namespace Plank\Publisher\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
+use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Scopes\PublisherScope;
 
 /**
@@ -29,7 +29,7 @@ trait IsPublishable
 
         static::saving(function (Publishable&Model $model) {
             if ($model->isBeingPublished()) {
-                if (! Gate::authorize('publish', $model)) {
+                if (! Publisher::canPublish($model)) {
                     return false;
                 }
 
@@ -37,7 +37,7 @@ trait IsPublishable
                 $model->firePublishing();
                 $model->fireAfterPublishing();
             } elseif ($model->isBeingUnpublished()) {
-                if (! Gate::authorize('unpublish', $model)) {
+                if (! Publisher::canUnpublish($model)) {
                     return false;
                 }
 

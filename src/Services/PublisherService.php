@@ -5,6 +5,7 @@ namespace Plank\Publisher\Services;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Plank\Publisher\Contracts\Publishable;
@@ -16,7 +17,7 @@ class PublisherService
 
     public function shouldEnableDraftContent(Request $request): bool
     {
-        if (Gate::denies('view-draft-content')) {
+        if ($this->shouldCheckGate() && Gate::denies('view-draft-content')) {
             return false;
         }
 
@@ -25,6 +26,23 @@ class PublisherService
         }
 
         return (bool) $request->query(config('publisher.urls.previewKey'));
+    }
+
+    public function canPublish(Publishable&Model $model): bool
+    {
+        return $this->shouldCheckGate()
+            && Gate::authorize('publish', $model);
+    }
+
+    public function canUnpublish(Publishable&Model $model): bool
+    {
+        return $this->shouldCheckGate()
+            && Gate::authorize('unpublish', $model);
+    }
+
+    protected function shouldCheckGate(): bool
+    {
+        return ! App::runningInConsole() || App::runningUnitTests();
     }
 
     public function draftContentRestricted(): bool
