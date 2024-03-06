@@ -17,7 +17,7 @@ class PublisherService
 
     public function shouldEnableDraftContent(Request $request): bool
     {
-        if (! $this->shouldCheckGate() || Gate::denies('view-draft-content')) {
+        if ($this->shouldCheckGate() && Gate::denies('view-draft-content')) {
             return false;
         }
 
