@@ -39,6 +39,9 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app)
     {
         $app['config']->set('database.default', 'testing');
-        $app['router']->get('posts/{id}', [PostController::class, 'show'])->name('posts.show');
+
+        $app['router']->middleware('publisher')
+            ->get('posts/{id}', [PostController::class, 'show'])
+            ->name('posts.show');
     }
 }
