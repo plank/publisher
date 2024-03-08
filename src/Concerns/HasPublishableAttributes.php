@@ -167,10 +167,11 @@ trait HasPublishableAttributes
 
     public function getDirtyDraftableAttributes(): array
     {
-        if ($this->draft === null) {
-            return $this->attributesForDraft();
-        }
+        $excluded = array_merge(
+            $this->excludedFromDraftByDefault(),
+            $this->excludedFromDraft()
+        );
 
-        return array_diff_assoc($this->draft, $this->attributesForDraft());
+        return array_diff_key($this->getDirty(), array_flip($excluded));
     }
 }
