@@ -46,8 +46,10 @@ trait QueriesPublishableModels
 
     protected function draftAllowedQuery($query, $column, $operator = null, $value = null, $boolean = 'and')
     {
-        return $query->where(fn ($query) => $this->publishedWhere($query, $column, $operator, $value, $boolean))
-            ->orWhere(fn ($query) => $this->unpublishedWhere($query, $column, $operator, $value, $boolean));
+        return $query->where(fn ($query) =>
+            $query->where(fn ($query) => $this->publishedWhere($query, $column, $operator, $value, $boolean))
+                ->orWhere(fn ($query) => $this->unpublishedWhere($query, $column, $operator, $value, $boolean))
+        );
     }
 
     protected function publishedWhere($query, $column, $operator = null, $value = null, $boolean = 'and')
