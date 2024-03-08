@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Plank\Publisher\PublisherServiceProvider;
 use Plank\Publisher\Tests\Helpers\Models\User;
-use Tests\Helpers\Controllers\TestController;
 use Tests\Helpers\Controllers\PostController;
+use Tests\Helpers\Controllers\TestController;
 
 class TestCase extends Orchestra
 {
