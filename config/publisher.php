@@ -10,7 +10,9 @@ return [
         'rewrite' => true,
         'previewKey' => 'preview',
     ],
-    'admin' => [
-        'path' => 'admin',
+    'draft_paths' => [
+        'admin*',
+        'nova-api*',
+        'nova-vendor*',
     ],
 ];

@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Gate;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
 
+use function Pest\Laravel\get;
+
 beforeEach(function () {
     $draft = Post::create([
         'author_id' => User::first()->id,
@@ -19,7 +21,7 @@ beforeEach(function () {
 });
 
 it('retrieves model attributes when not using the previewKey via middleware', function () {
-    $response = $this->get('/posts/1');
+    $response = get('/posts/1');
     $response->assertStatus(200);
 
     $post = $response->original;
@@ -28,7 +30,7 @@ it('retrieves model attributes when not using the previewKey via middleware', fu
 });
 
 it('retrieves draft attributes when using the previewKey via middleware', function () {
-    $response = $this->get('/posts/1?preview=true');
+    $response = get('/posts/1?preview=true');
     $response->assertStatus(200);
 
     $post = $response->original;
@@ -41,7 +43,7 @@ it('retrieves model attributes when the user is not permitted to view-draft-cont
         return false;
     });
 
-    $response = $this->get('/posts/1?preview=true');
+    $response = get('/posts/1?preview=true');
     $response->assertStatus(200);
 
     $post = $response->original;

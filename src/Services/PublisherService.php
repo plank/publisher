@@ -21,8 +21,10 @@ class PublisherService
             return false;
         }
 
-        if (($path = config()->get('publisher.admin.path')) && str($request->path())->startsWith($path)) {
-            return true;
+        if ($patterns = config()->get('publisher.draft_paths')) {
+            if ($request->is($patterns)) {
+                return true;
+            }
         }
 
         return (bool) $request->query(config('publisher.urls.previewKey'));

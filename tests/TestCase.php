@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Plank\Publisher\PublisherServiceProvider;
 use Plank\Publisher\Tests\Helpers\Models\User;
+use Tests\Helpers\Controllers\TestController;
 use Tests\Helpers\Controllers\PostController;
 
 class TestCase extends Orchestra
@@ -44,5 +45,25 @@ class TestCase extends Orchestra
             ->middleware('publisher')
             ->get('posts/{id}', [PostController::class, 'show'])
             ->name('posts.show');
+
+        $app['router']
+            ->middleware('publisher')
+            ->get('pages/{id}', [TestController::class, 'test'])
+            ->name('pages.show');
+
+        $app['router']
+            ->middleware('publisher')
+            ->get('admin', [TestController::class, 'test'])
+            ->name('admin');
+
+        $app['router']
+            ->middleware('publisher')
+            ->get('admin/dashboard', [TestController::class, 'test'])
+            ->name('admin.dashboard');
+
+        $app['router']
+            ->middleware('publisher')
+            ->get('admin/resources/{resource}/{resourceId}/details', [TestController::class, 'test'])
+            ->name('admin.show');
     }
 }

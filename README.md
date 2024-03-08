@@ -98,11 +98,11 @@ When the value configured in `previewKey` is present in the GET query, AND the u
 
 &nbsp;
 
-### Admin Panel
+### Draft Paths
 
-It is assumed that your Admin panel should always allow draft content to be visible. If you are using the package's middleware, you can specify the route prefix of your admin panel by setting the `admin.path` key in the configuration file.
+You can specify [request path patterns](https://laravel.com/api/10.x/Illuminate/Http/Request.html#method_is) for endpoints you wish to force draft content to be enabled on. This is especially important for your Admin Panel and CMS routes, as you will want to be working with unpublished content during the editing/creation process.
 
-When this key is set all routes that start with the specified prefix will always have draft content enabled.
+By default, this package defaults to the Plank's standard for using Laravel Nova with `admin/*`, `nova-api/*` and `nova-vendor/*` defined.
 
 &nbsp;
 
