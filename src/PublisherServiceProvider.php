@@ -119,16 +119,7 @@ class PublisherServiceProvider extends PackageServiceProvider
 
     protected function registerMiddleware(): self
     {
-        if (config('publisher.middleware.enabled') !== true) {
-            return $this;
-        }
-
-        if ($group = config('publisher.middleware.group')) {
-            $this->app->make(\Illuminate\Contracts\Http\Kernel::class)
-                ->appendMiddlewareToGroup($group, PublisherMiddleware::class);
-        } else {
-            $this->app['router']->aliasMiddleware('publisher', PublisherMiddleware::class);
-        }
+        $this->app['router']->aliasMiddleware('publisher', PublisherMiddleware::class);
 
         return $this;
     }
