@@ -46,21 +46,21 @@ trait QueriesPublishableModels
 
     protected function draftAllowedQuery($query, $column, $operator = null, $value = null, $boolean = 'and')
     {
-        return $query->where(fn ($query) => $query->where(fn ($query) => $this->publishedWhere($query, $column, $operator, $value, $boolean))
-            ->orWhere(fn ($query) => $this->unpublishedWhere($query, $column, $operator, $value, $boolean))
+        return $query->where(fn ($query) => $query->where(fn ($query) => $this->publishedWhere($query, $column, $operator, $value))
+            ->orWhere(fn ($query) => $this->unpublishedWhere($query, $column, $operator, $value)), null, null, $boolean
         );
     }
 
-    protected function publishedWhere($query, $column, $operator = null, $value = null, $boolean = 'and')
+    protected function publishedWhere($query, $column, $operator = null, $value = null)
     {
         return $query->where($this->model->workflowColumn(), $this->model->publishedState())
-            ->where($column, $operator, $value, $boolean);
+            ->where($column, $operator, $value, 'and');
     }
 
-    protected function unpublishedWhere($query, $column, $operator = null, $value = null, $boolean = 'and')
+    protected function unpublishedWhere($query, $column, $operator = null, $value = null)
     {
         return $query->whereNot($this->model->workflowColumn(), $this->model->publishedState())
-            ->where($this->model->draftColumn().'->'.$column, $operator, $value, $boolean);
+            ->where($this->model->draftColumn().'->'.$column, $operator, $value, 'and');
     }
 
     protected function shouldUseDraftColumn(string $column): bool
