@@ -57,7 +57,7 @@ it('updates draft values when a model is saved while in draft', function () {
     $this->assertEquals('My First Post', $post->getRawAttributes()['title']);
 });
 
-it('forces content to draft when a model is updated while published', function () {
+it('maintains published state when a model is updated while published', function () {
     $post = Post::create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
@@ -73,8 +73,7 @@ it('forces content to draft when a model is updated while published', function (
     ]);
 
     $this->assertEquals('My Updated Post', $post->title);
-    $this->assertEquals('draft', $post->status);
-    $this->assertEquals('My First Post', $post->getDraftableAttributes()['title']);
+    $this->assertNull($post->draft);
 });
 
 it('puts attributes in draft when a model is unpublished', function () {

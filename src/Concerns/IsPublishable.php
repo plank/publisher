@@ -112,13 +112,7 @@ trait IsPublishable
 
     public function shouldBeDrafted(): bool
     {
-        if ($this->isNotPublished()) {
-            return true;
-        }
-
-        return $this->exists
-            && ! $this->isBeingPublished()
-            && $this->hasDirtyDraftableAttributes();
+        return $this->attributes[$this->workflowColumn()] !== $this->publishedState();
     }
 
     public function isBeingPublished(): bool

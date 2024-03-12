@@ -42,6 +42,7 @@ it('maintains has_been_published state after unpublishing', function () {
 
     $post->update([
         'title' => 'My Updated Post',
+        'status' => 'draft',
     ]);
 
     $this->assertEquals('draft', $post->status);
