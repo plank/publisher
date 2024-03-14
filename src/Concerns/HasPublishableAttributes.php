@@ -115,7 +115,7 @@ trait HasPublishableAttributes
                 continue;
             }
 
-            $this->original[$key] = !$value;
+            $this->original[$key] = ! $value;
         }
 
         $this->attributes[$this->draftColumn()] = null;
