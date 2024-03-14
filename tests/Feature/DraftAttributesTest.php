@@ -146,7 +146,7 @@ it('publishes changes queued in draft when published', function () {
 
     $this->assertEquals('My Updated Post', $post->title);
     $this->assertEquals('My First Post', $post->getRawAttributes()['title']);
-    
+
     $this->assertEquals('my-updated-post', $post->slug);
     $this->assertEquals('my-first-post', $post->getRawAttributes()['slug']);
 
