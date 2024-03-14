@@ -139,13 +139,13 @@ trait IsPublishable
 
     public function wasPublished(): bool
     {
-        return $this->wasChanged($this->workflowColumn())
+        return ($this->wasChanged($this->workflowColumn()) || $this->wasRecentlyCreated)
             && $this->getOriginal($this->workflowColumn()) === $this->publishedState();
     }
 
     public function wasUnpublished(): bool
     {
-        return $this->wasChanged($this->workflowColumn())
+        return ($this->wasChanged($this->workflowColumn()) || $this->wasRecentlyCreated)
             && $this->getOriginal($this->workflowColumn()) !== $this->publishedState();
     }
 
