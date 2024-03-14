@@ -139,22 +139,24 @@ trait IsPublishable
 
     public function wasPublished(): bool
     {
-        return $this->wasPublished;
+        return $this->wasChanged($this->workflowColumn())
+            && $this->getOriginal($this->workflowColumn()) === $this->publishedState();
     }
 
     public function wasUnpublished(): bool
     {
-        return $this->wasUnpublished;
+        return $this->wasChanged($this->workflowColumn())
+            && $this->getOriginal($this->workflowColumn()) !== $this->publishedState();
     }
 
     public function wasDrafted(): bool
     {
-        return $this->wasDrafted;
+        return $this->attributes[$this->workflowColumn()] !== $this->publishedState();
     }
 
     public function wasUndrafted(): bool
     {
-        return $this->wasUndrafted;
+        return $this->attributes[$this->workflowColumn()] === $this->publishedState();
     }
 
     public function hasEverBeenPublished(): bool

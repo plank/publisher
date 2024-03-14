@@ -11,26 +11,6 @@ use Plank\Publisher\Contracts\PublishableEvents;
  */
 trait FiresPublishingEvents
 {
-    /**
-     * Persist the model was published even after the model is saved
-     */
-    public $wasPublished = false;
-
-    /**
-     * Persist the model was unpublished even after the model is saved
-     */
-    public $wasUnpublished = false;
-
-    /**
-     * Persist the model was drafted even after the model is saved
-     */
-    public $wasDrafted = false;
-
-    /**
-     * Persist the model was undrafted even after the model is saved
-     */
-    public $wasUndrafted = false;
-
     public function initializeIsPublishable()
     {
         $this->addObservableEvents([
@@ -74,7 +54,6 @@ trait FiresPublishingEvents
     public function fireAfterPublishing(): void
     {
         $this->fireModelEvent('afterPublishing');
-        $this->wasPublished = true;
     }
 
     public function fireBeforeUnpublishing(): void
@@ -90,7 +69,6 @@ trait FiresPublishingEvents
     public function fireAfterUnpublishing(): void
     {
         $this->fireModelEvent('afterUnpublishing');
-        $this->wasUnpublished = true;
     }
 
     public function fireBeforePublished(): void
@@ -106,7 +84,6 @@ trait FiresPublishingEvents
     public function fireAfterPublished(): void
     {
         $this->fireModelEvent('afterPublished');
-        $this->wasPublished = false;
     }
 
     public function fireBeforeUnpublished(): void
@@ -122,7 +99,6 @@ trait FiresPublishingEvents
     public function fireAfterUnpublished(): void
     {
         $this->fireModelEvent('afterUnpublished');
-        $this->wasUnpublished = false;
     }
 
     public function fireBeforeDrafting(): void
@@ -138,7 +114,6 @@ trait FiresPublishingEvents
     public function fireAfterDrafting(): void
     {
         $this->fireModelEvent('afterDrafting');
-        $this->wasDrafted = true;
     }
 
     public function fireBeforeUndrafting(): void
@@ -154,7 +129,6 @@ trait FiresPublishingEvents
     public function fireAfterUndrafting(): void
     {
         $this->fireModelEvent('afterUndrafting');
-        $this->wasUndrafted = true;
     }
 
     public function fireBeforeDrafted(): void
@@ -170,7 +144,6 @@ trait FiresPublishingEvents
     public function fireAfterDrafted(): void
     {
         $this->fireModelEvent('afterDrafted');
-        $this->wasDrafted = false;
     }
 
     public function fireBeforeUndrafted(): void
@@ -186,7 +159,6 @@ trait FiresPublishingEvents
     public function fireAfterUndrafted(): void
     {
         $this->fireModelEvent('afterUndrafted');
-        $this->wasUndrafted = false;
     }
 
     public static function beforePublishing(callable $callback): void

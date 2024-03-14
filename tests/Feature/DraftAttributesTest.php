@@ -130,3 +130,37 @@ it('sets attributes from draft when a publishable model is published', function 
     $this->assertEquals('My Updated Post', $retrieved->title);
     $this->assertEquals('my-updated-post', $retrieved->slug);
 });
+
+it('publishes changes queued in draft when published', function () {
+    $post = Post::create([
+        'author_id' => User::first()->id,
+        'title' => 'My First Post',
+        'slug' => 'my-first-post',
+        'body' => 'This is the body of my first post.',
+        'status' => 'draft',
+    ]);
+
+    $post->title = 'My Updated Post';
+    $post->slug = 'my-updated-post';
+    $post->save();
+
+    $this->assertEquals('My Updated Post', $post->title);
+    $this->assertEquals('My First Post', $post->getRawAttributes()['title']);
+    
+    $this->assertEquals('my-updated-post', $post->slug);
+    $this->assertEquals('my-first-post', $post->getRawAttributes()['slug']);
+
+    $post->body = 'This is the body of my updated post.';
+    $post->save();
+
+    $this->assertEquals('This is the body of my updated post.', $post->body);
+    $this->assertEquals('This is the body of my first post.', $post->getRawAttributes()['body']);
+
+    $post->status = 'published';
+    $post->save();
+
+    $this->assertEquals('My Updated Post', $post->title);
+    $this->assertEquals('my-updated-post', $post->slug);
+    $this->assertEquals('This is the body of my updated post.', $post->body);
+    $this->assertNull($post->draft);
+});
