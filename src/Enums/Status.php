@@ -4,7 +4,7 @@ namespace Plank\Publisher\Enums;
 
 use Plank\Publisher\Contracts\PublishingStatus;
 
-enum Status: string implements PublishingStatus 
+enum Status: string implements PublishingStatus
 {
     case DRAFT = 'draft';
     case PUBLISHED = 'published';

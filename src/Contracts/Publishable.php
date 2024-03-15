@@ -21,7 +21,7 @@ interface Publishable extends PublishableAttributes, PublishableEvents
 
     /**
      * Get the Workflow State Enum
-     * 
+     *
      * @return class-string<PublishingStatus>
      */
     public static function workflow(): string;
