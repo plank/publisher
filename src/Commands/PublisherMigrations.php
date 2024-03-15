@@ -50,7 +50,7 @@ class PublisherMigrations extends Command
         $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published', 'has_been_published');
         $draftColumn = config()->get('publisher.columns.draft', 'draft');
         $workflowColumn = config()->get('publisher.columns.workflow', 'status');
-        $unpublishedState = $model->unpublishedState();
+        $unpublishedState = $model::workflow()::unpublished()->value;
 
         return <<<EOT
         <?php

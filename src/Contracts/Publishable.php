@@ -20,14 +20,11 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function hasBeenPublishedColumn(): string;
 
     /**
-     * Get the value of the published state
+     * Get the Workflow State Enum
+     * 
+     * @return class-string<PublishingStatus>
      */
-    public function publishedState(): string;
-
-    /**
-     * Get the value of the unpublished state
-     */
-    public function unpublishedState(): string;
+    public static function workflow(): string;
 
     /**
      * Determine if the model should have its attributes stored in draft

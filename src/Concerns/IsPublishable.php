@@ -5,6 +5,8 @@ namespace Plank\Publisher\Concerns;
 use Illuminate\Database\Eloquent\Model;
 use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
+use Plank\Publisher\Contracts\PublishingStatus;
+use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Scopes\PublisherScope;
 
@@ -20,7 +22,21 @@ trait IsPublishable
 
     public function initializeIsPublishable()
     {
-        $this->attributes[$this->workflowColumn()] ??= $this->unpublishedState();
+        $this->mergePublishableCasts();
+        
+        $this->{$this->workflowColumn()} ??= static::workflow()::unpublished();
+        $this->{$this->hasBeenPublishedColumn()} ??= false;
+        
+        $this->makeHidden($this->draftColumn());
+    }
+
+    protected function mergePublishableCasts(): void
+    {
+        $this->mergeCasts([
+            $this->workflowColumn() => Status::class,
+            $this->draftColumn() => 'json',
+            $this->hasBeenPublishedColumn() => 'boolean',
+        ]);
     }
 
     public static function bootIsPublishable()
@@ -80,6 +96,11 @@ trait IsPublishable
         });
     }
 
+    public function draftColumn(): string
+    {
+        return config('publisher.columns.draft', 'draft');
+    }
+
     public function workflowColumn(): string
     {
         return config()->get('publisher.columns.workflow', 'status');
@@ -90,14 +111,12 @@ trait IsPublishable
         return config()->get('publisher.columns.has_been_published', 'has_been_published');
     }
 
-    public function publishedState(): string
+    /**
+     * @return class-string<PublishingStatus>
+     */
+    public static function workflow(): string
     {
-        return 'published';
-    }
-
-    public function unpublishedState(): string
-    {
-        return 'draft';
+        return config()->get('publisher.workflow');
     }
 
     public static function query(): PublisherBuilder
@@ -112,24 +131,24 @@ trait IsPublishable
 
     public function shouldBeDrafted(): bool
     {
-        return $this->attributes[$this->workflowColumn()] !== $this->publishedState();
+        return $this->{$this->workflowColumn()} !== static::workflow()::published();
     }
 
     public function isBeingPublished(): bool
     {
         return $this->isDirty($this->workflowColumn())
-            && $this->attributes[$this->workflowColumn()] === $this->publishedState();
+            && $this->{$this->workflowColumn()} === static::workflow()::published();
     }
 
     public function isBeingUnpublished(): bool
     {
         return $this->isDirty($this->workflowColumn())
-            && $this->attributes[$this->workflowColumn()] !== $this->publishedState();
+            && $this->{$this->workflowColumn()} !== static::workflow()::published();
     }
 
     public function isPublished(): bool
     {
-        return $this->attributes[$this->workflowColumn()] === $this->publishedState();
+        return $this->{$this->workflowColumn()} === static::workflow()::published();
     }
 
     public function isNotPublished(): bool
@@ -140,23 +159,23 @@ trait IsPublishable
     public function wasPublished(): bool
     {
         return ($this->wasChanged($this->workflowColumn()) || $this->wasRecentlyCreated)
-            && $this->{$this->workflowColumn()} === $this->publishedState();
+            && $this->{$this->workflowColumn()} === static::workflow()::published();
     }
 
     public function wasUnpublished(): bool
     {
         return ($this->wasChanged($this->workflowColumn()) || $this->wasRecentlyCreated)
-            && $this->{$this->workflowColumn()} !== $this->publishedState();
+            && $this->{$this->workflowColumn()} !== static::workflow()::published();
     }
 
     public function wasDrafted(): bool
     {
-        return $this->attributes[$this->workflowColumn()] !== $this->publishedState();
+        return $this->{$this->workflowColumn()} !== static::workflow()::published();
     }
 
     public function wasUndrafted(): bool
     {
-        return $this->attributes[$this->workflowColumn()] === $this->publishedState();
+        return $this->{$this->workflowColumn()} === static::workflow()::published();
     }
 
     public function hasEverBeenPublished(): bool

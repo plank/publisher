@@ -1,18 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Gate;
+use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
 
 use function Pest\Laravel\get;
 
 beforeEach(function () {
-    $draft = Post::create([
+    $draft = Post::query()->create([
         'author_id' => User::first()->id,
         'title' => '(Published) My First Post',
         'slug' => 'my-first-post',
         'body' => 'A first post.',
-        'status' => 'published',
+        'status' => Status::PUBLISHED,
     ]);
 
     $draft->title = '(Draft) My First Post';

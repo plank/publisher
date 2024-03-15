@@ -1,5 +1,6 @@
 <?php
 
+use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
 
@@ -34,10 +35,10 @@ it('maintains has_been_published state after unpublishing', function () {
         'title' => 'My First Post',
         'slug' => 'my-first-post',
         'body' => 'This is the body of my first post.',
-        'status' => 'published',
+        'status' => Status::published(),
     ]);
 
-    $this->assertEquals('published', $post->status);
+    $this->assertEquals(Status::published(), $post->status);
     $this->assertTrue($post->hasEverBeenPublished());
 
     $post->update([
@@ -45,6 +46,6 @@ it('maintains has_been_published state after unpublishing', function () {
         'status' => 'draft',
     ]);
 
-    $this->assertEquals('draft', $post->status);
+    $this->assertEquals(Status::unpublished(), $post->status);
     $this->assertTrue($post->hasEverBeenPublished());
 });

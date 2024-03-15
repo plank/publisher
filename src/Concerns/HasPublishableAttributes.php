@@ -13,23 +13,6 @@ use Plank\Publisher\Facades\Publisher;
  */
 trait HasPublishableAttributes
 {
-    public function initializeHasPublishableAttributes()
-    {
-        $this->mergeCasts([
-            $this->draftColumn() => 'json',
-            $this->hasBeenPublishedColumn() => 'boolean',
-        ]);
-
-        $this->makeHidden($this->draftColumn());
-
-        $this->attributes[$this->hasBeenPublishedColumn()] ??= false;
-    }
-
-    public function draftColumn(): string
-    {
-        return config('publisher.columns.draft', 'draft');
-    }
-
     public static function bootHasPublishableAttributes()
     {
         static::retrieved(function (Publishable&Model $model) {
@@ -44,7 +27,6 @@ trait HasPublishableAttributes
 
         static::drafting(function (Publishable&Model $model) {
             $model->putAttributesInDraft();
-            $model->{$model->workflowColumn()} = $model->unpublishedState();
         });
 
         static::drafted(function (Publishable&Model $model) {

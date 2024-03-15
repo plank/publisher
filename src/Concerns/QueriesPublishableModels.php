@@ -26,7 +26,7 @@ trait QueriesPublishableModels
     public function onlyDraft(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
-            ->whereNot($this->model->workflowColumn(), $this->model->publishedState());
+            ->whereNot($this->model->workflowColumn(), $this->model::workflow()::published());
     }
 
     public function where($column, $operator = null, $value = null, $boolean = 'and')
@@ -53,13 +53,13 @@ trait QueriesPublishableModels
 
     protected function publishedWhere($query, $column, $operator = null, $value = null)
     {
-        return $query->where($this->model->workflowColumn(), $this->model->publishedState())
+        return $query->where($this->model->workflowColumn(), $this->model::workflow()::published())
             ->where($column, $operator, $value, 'and');
     }
 
     protected function unpublishedWhere($query, $column, $operator = null, $value = null)
     {
-        return $query->whereNot($this->model->workflowColumn(), $this->model->publishedState())
+        return $query->whereNot($this->model->workflowColumn(), $this->model::workflow()::published())
             ->where($this->model->draftColumn().'->'.$column, $operator, $value, 'and');
     }
 

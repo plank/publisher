@@ -1,6 +1,9 @@
 <?php
 
+use Plank\Publisher\Enums\Status;
+
 return [
+    'workflow' => Status::class,
     'columns' => [
         'draft' => 'draft',
         'workflow' => 'status',
