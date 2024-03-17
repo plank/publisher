@@ -5,22 +5,21 @@ namespace Plank\Publisher\Tests\Helper\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Tests\Helpers\Models\Post;
-use Plank\Publisher\Tests\Helpers\Models\User;
+use Plank\Publisher\Tests\Helpers\Models\Section;
 
-class PostFactory extends Factory
+class SectionFactory extends Factory
 {
-    protected $model = Post::class;
+    protected $model = Section::class;
 
     public function definition()
     {
-        $title = $this->faker->words($this->faker->numberBetween(2, 4), true);
+        $heading = $this->faker->words($this->faker->numberBetween(2, 4), true);
         $status = $this->faker->randomElement(Status::cases());
 
         $attributes = [
-            'author_id' => User::query()->inRandomOrder()->first()?->id ?? User::factory(),
-            'title' => $title,
-            'slug' => (string) str($title)->slug(),
-            'body' => $this->faker->paragraphs($this->faker->numberBetween(1, 3), true),
+            'post_id' => Post::query()->inRandomOrder()->first()?->id ?? Post::factory(),
+            'heading' => $heading,
+            'text' => $this->faker->paragraphs($this->faker->numberBetween(1, 3), true),
         ];
 
         return [
