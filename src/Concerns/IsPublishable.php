@@ -19,6 +19,7 @@ trait IsPublishable
 {
     use FiresPublishingEvents;
     use HasPublishableAttributes;
+    use SyncsPublishing;
 
     public function initializeIsPublishable()
     {
@@ -26,8 +27,13 @@ trait IsPublishable
         
         $this->{$this->workflowColumn()} ??= static::workflow()::unpublished();
         $this->{$this->hasBeenPublishedColumn()} ??= false;
+        $this->{$this->shouldDeleteColumn()} ??= false;
         
-        $this->makeHidden($this->draftColumn());
+        $this->makeHidden([
+            $this->draftColumn(),
+            $this->hasBeenPublishedColumn(),
+            $this->shouldDeleteColumn(),
+        ]);
     }
 
     protected function mergePublishableCasts(): void
@@ -36,6 +42,7 @@ trait IsPublishable
             $this->workflowColumn() => Status::class,
             $this->draftColumn() => 'json',
             $this->hasBeenPublishedColumn() => 'boolean',
+            $this->shouldDeleteColumn() => 'boolean',
         ]);
     }
 
@@ -111,6 +118,11 @@ trait IsPublishable
         return config()->get('publisher.columns.has_been_published', 'has_been_published');
     }
 
+    public function shouldDeleteColumn(): string
+    {
+        return config()->get('publisher.columns.should_delete', 'should_delete');
+    }
+
     /**
      * @return class-string<PublishingStatus>
      */
@@ -180,6 +192,6 @@ trait IsPublishable
 
     public function hasEverBeenPublished(): bool
     {
-        return $this->attributes[$this->hasBeenPublishedColumn()] === true;
+        return $this->{$this->hasBeenPublishedColumn()};
     }
 }
