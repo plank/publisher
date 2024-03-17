@@ -81,7 +81,7 @@ trait SyncsPublishing
         return $this->{$this->dependendsOnPublishableRelation()};
     }
 
-    public function dependendsOnPublishableRelation(): string|null
+    public function dependendsOnPublishableRelation(): ?string
     {
         if (property_exists($this, 'dependendsOnPublishable')) {
             return $this->dependendsOnPublishable;
@@ -90,7 +90,7 @@ trait SyncsPublishing
         return null;
     }
 
-    public function dependsOnPublishableForeignKey(): string|null
+    public function dependsOnPublishableForeignKey(): ?string
     {
         if ($relation = $this->dependendsOnPublishableRelation()) {
             $relation = $this->{$relation}();
@@ -112,7 +112,7 @@ trait SyncsPublishing
 
         $models = [$this];
 
-        $relations = explode(".", $relation);
+        $relations = explode('.', $relation);
 
         while ($part = array_shift($relations)) {
             $results = [];

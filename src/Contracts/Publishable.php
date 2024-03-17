@@ -29,7 +29,7 @@ interface Publishable extends PublishableAttributes, PublishableEvents
 
     /**
      * Get the Workflow State Enum
-     * 
+     *
      * @return class-string<PublishingStatus>
      */
     public static function workflow(): string;
@@ -95,9 +95,9 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function syncPublishingFrom(Publishable&Model $from): void;
 
     /**
-     * Get a Collection of of dot-notation relations that should be synced 
+     * Get a Collection of of dot-notation relations that should be synced
      * with this Model's publishing/visibility state.
-     * 
+     *
      * @return Collection<string>
      */
     public function publishingDependents(): Collection;
@@ -115,11 +115,11 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     /**
      * Get the Model that this Model depends on for publishing/visibility
      */
-    public function dependendsOnPublishableRelation(): string|null;
+    public function dependendsOnPublishableRelation(): ?string;
 
     /**
-     * Get the Model the foreign key that this Model depends on for 
+     * Get the Model the foreign key that this Model depends on for
      * publishing/visibility
      */
-    public function dependsOnPublishableForeignKey(): string|null;
+    public function dependsOnPublishableForeignKey(): ?string;
 }

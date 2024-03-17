@@ -24,11 +24,11 @@ trait IsPublishable
     public function initializeIsPublishable()
     {
         $this->mergePublishableCasts();
-        
+
         $this->{$this->workflowColumn()} ??= static::workflow()::unpublished();
         $this->{$this->hasBeenPublishedColumn()} ??= false;
         $this->{$this->shouldDeleteColumn()} ??= false;
-        
+
         $this->makeHidden([
             $this->draftColumn(),
             $this->hasBeenPublishedColumn(),
