@@ -29,6 +29,23 @@ trait QueriesPublishableModels
             ->whereNot($this->model->workflowColumn(), $this->model::workflow()::published());
     }
 
+    public function withoutQueuedDeletes(): Builder&PublisherQueries
+    {
+        return $this->withoutGlobalScope(PublisherScope::class)
+            ->where($this->model->shouldDeleteColumn(), false);
+    }
+
+    public function withQueuedDeletes(): Builder&PublisherQueries
+    {
+        return $this->withoutGlobalScope(PublisherScope::class);
+    }
+
+    public function onlyQueuedDeletes(): Builder&PublisherQueries
+    {
+        return $this->withoutGlobalScope(PublisherScope::class)
+            ->where($this->model->shouldDeleteColumn(), true);
+    }
+
     public function where($column, $operator = null, $value = null, $boolean = 'and')
     {
         if ($column instanceof Closure && is_null($operator)) {

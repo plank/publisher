@@ -8,21 +8,20 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('sections', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('author_id');
-            $table->string('title');
-            $table->string('slug');
-            $table->text('body');
+            $table->unsignedBigInteger('post_id');
+            $table->string('heading');
+            $table->text('text');
             $table->string('status');
             $table->boolean('has_been_published')->default(false);
             $table->json('draft')->nullable();
             $table->boolean('should_delete')->default(false);
             $table->timestamps();
 
-            $table->foreign('author_id')
+            $table->foreign('post_id')
                 ->references('id')
-                ->on('users')
+                ->on('posts')
                 ->nullOnDelete();
         });
     }

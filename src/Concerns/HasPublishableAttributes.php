@@ -126,6 +126,8 @@ trait HasPublishableAttributes
             $this->workflowColumn(),
             $this->draftColumn(),
             $this->hasBeenPublishedColumn(),
+            $this->shouldDeleteColumn(),
+            $this->dependsOnPublishableForeignKey(),
         ]);
 
         if (in_array(SoftDeletes::class, class_uses_recursive($this))) {

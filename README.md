@@ -140,7 +140,6 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 - [Kurt Friars](https://github.com/kfriars)
 - [Massimo Triassi](https://github.com/m-triassi)
-- [Andrew Hanichkovsky](https://github.com/a-drew)
 - [All Contributors](../../contributors)
 
 &nbsp;

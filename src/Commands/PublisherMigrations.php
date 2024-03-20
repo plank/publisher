@@ -51,6 +51,7 @@ class PublisherMigrations extends Command
         $draftColumn = config()->get('publisher.columns.draft', 'draft');
         $workflowColumn = config()->get('publisher.columns.workflow', 'status');
         $unpublishedState = $model::workflow()::unpublished()->value;
+        $shouldDeleteColumn = config()->get('publisher.columns.should_delete', 'should_delete');
 
         return <<<EOT
         <?php
@@ -66,6 +67,7 @@ class PublisherMigrations extends Command
                     \$table->json('$draftColumn')->nullable();
                     \$table->string('$workflowColumn')->default('$unpublishedState');
                     \$table->boolean('$hasBeenPublishedColumn')->default(false);
+                    \$table->boolean('$shouldDeleteColumn')->default(false);
                 });
             }
 
@@ -75,6 +77,7 @@ class PublisherMigrations extends Command
                     \$table->dropColumn('$workflowColumn');
                     \$table->dropColumn('$draftColumn');
                     \$table->dropColumn('$hasBeenPublishedColumn');
+                    \$table->dropColumn('$shouldDeleteColumn');
                 });
             }
         };

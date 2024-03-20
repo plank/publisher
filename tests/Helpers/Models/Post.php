@@ -12,6 +12,13 @@ class Post extends TestModel implements Publishable
 {
     use IsPublishable;
 
+    protected array $publishingDependents = ['sections'];
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(Section::class, 'post_id');
+    }
+
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');

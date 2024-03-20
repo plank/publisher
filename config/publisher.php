@@ -8,6 +8,7 @@ return [
         'draft' => 'draft',
         'workflow' => 'status',
         'has_been_published' => 'has_been_published',
+        'should_delete' => 'should_delete',
     ],
     'urls' => [
         'rewrite' => true,

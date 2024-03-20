@@ -2,6 +2,9 @@
 
 namespace Plank\Publisher\Contracts;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+
 interface Publishable extends PublishableAttributes, PublishableEvents
 {
     /**
@@ -18,6 +21,11 @@ interface Publishable extends PublishableAttributes, PublishableEvents
      * Get the name of the column that stores if the model has ever been published
      */
     public function hasBeenPublishedColumn(): string;
+
+    /**
+     * Get the name of the column that stores if the model should be deleted
+     */
+    public function shouldDeleteColumn(): string;
 
     /**
      * Get the Workflow State Enum
@@ -75,4 +83,43 @@ interface Publishable extends PublishableAttributes, PublishableEvents
      * Determine if the Model was recently saved as draft
      */
     public function wasUndrafted(): bool;
+
+    /**
+     * Sync the publishing state to dependents
+     */
+    public function syncPublishingToDependents(): void;
+
+    /**
+     * Sync the publishing state from another model
+     */
+    public function syncPublishingFrom(Publishable&Model $from): void;
+
+    /**
+     * Get a Collection of of dot-notation relations that should be synced
+     * with this Model's publishing/visibility state.
+     *
+     * @return Collection<string>
+     */
+    public function publishingDependents(): Collection;
+
+    /**
+     * Queue the model for deletion if it's owner is not published
+     */
+    public function queueForDelete(): ?bool;
+
+    /**
+     * Get the Model that this Model depends on for publishing/visibility
+     */
+    public function dependendsOnPublishable(): (Publishable&Model)|null;
+
+    /**
+     * Get the Model that this Model depends on for publishing/visibility
+     */
+    public function dependendsOnPublishableRelation(): ?string;
+
+    /**
+     * Get the Model the foreign key that this Model depends on for
+     * publishing/visibility
+     */
+    public function dependsOnPublishableForeignKey(): ?string;
 }
