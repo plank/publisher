@@ -11,7 +11,7 @@ use Plank\Publisher\Contracts\PublishableEvents;
  */
 trait FiresPublishingEvents
 {
-    public function initializeIsPublishable()
+    public function initializeFiresPublishingEvents()
     {
         $this->addObservableEvents([
             'beforePublishing',
