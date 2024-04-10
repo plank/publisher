@@ -57,8 +57,8 @@ it('does not delete dependent content when its parent is in draft', function () 
 
     $section = $sections->first();
     $section->delete();
-    expect($post->sections()->withoutQueuedDeletes()->count())->toBe(2);
-    expect($post->sections()->count())->toBe(3);
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+    expect($post->sections()->count())->toBe(2);
     expect($section->should_delete)->toBeTrue();
 });
 
@@ -91,14 +91,14 @@ it('deletes dependent content queued to be deleted when its parent is published'
 
     $section = $sections->first();
     $section->delete();
-    expect($post->sections()->withoutQueuedDeletes()->count())->toBe(2);
-    expect($post->sections()->count())->toBe(3);
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+    expect($post->sections()->count())->toBe(2);
     expect($section->should_delete)->toBeTrue();
 
     $post->status = Status::PUBLISHED;
     $post->save();
 
-    expect($post->sections()->withoutQueuedDeletes()->count())->toBe(2);
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(2);
     expect($post->sections()->count())->toBe(2);
 });
 
@@ -115,13 +115,13 @@ it('does not delete dependent content queued to be deleted when its parent is sa
     $section = $sections->first();
     $section->delete();
 
-    expect($post->sections()->withoutQueuedDeletes()->count())->toBe(2);
-    expect($post->sections()->count())->toBe(3);
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+    expect($post->sections()->count())->toBe(2);
     expect($section->should_delete)->toBeTrue();
 
     $post->title .= ' – Updated';
     $post->save();
 
-    expect($post->sections()->withoutQueuedDeletes()->count())->toBe(2);
-    expect($post->sections()->count())->toBe(3);
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+    expect($post->sections()->count())->toBe(2);
 });

@@ -20,6 +20,8 @@ class PublisherScope implements Scope
     {
         if (Publisher::draftContentRestricted()) {
             $builder->onlyPublished();
+        } else {
+            $builder->withoutQueuedDeletes();
         }
     }
 }

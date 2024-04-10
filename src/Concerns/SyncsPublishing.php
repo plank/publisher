@@ -108,8 +108,6 @@ trait SyncsPublishing
      */
     protected function nestedPluck(string $relation): Collection
     {
-        $this->loadMissing($relation);
-
         $models = [$this];
 
         $relations = explode('.', $relation);
@@ -118,7 +116,7 @@ trait SyncsPublishing
             $results = [];
 
             foreach ($models as $model) {
-                $related = $model->{$part};
+                $related = $model->{$part}()->withoutGlobalScopes()->get();
 
                 if ($related instanceof Model) {
                     $results[] = $related;
