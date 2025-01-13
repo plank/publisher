@@ -39,7 +39,7 @@ trait IsPublishable
     protected function mergePublishableCasts(): void
     {
         $this->mergeCasts([
-            $this->workflowColumn() => Status::class,
+            $this->workflowColumn() => config()->get('publisher.workflow'),
             $this->draftColumn() => 'json',
             $this->hasBeenPublishedColumn() => 'boolean',
             $this->shouldDeleteColumn() => 'boolean',
