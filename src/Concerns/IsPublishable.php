@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Contracts\PublishingStatus;
-use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Scopes\PublisherScope;
 
@@ -39,7 +38,7 @@ trait IsPublishable
     protected function mergePublishableCasts(): void
     {
         $this->mergeCasts([
-            $this->workflowColumn() => Status::class,
+            $this->workflowColumn() => config()->get('publisher.workflow'),
             $this->draftColumn() => 'json',
             $this->hasBeenPublishedColumn() => 'boolean',
             $this->shouldDeleteColumn() => 'boolean',
