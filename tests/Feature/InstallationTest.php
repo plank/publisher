@@ -51,7 +51,7 @@ it('does not publish the config file when not confirmed', function () {
 
 it('publishes the migrations file when confirmed', function () {
     Publisher::shouldReceive('publishableModels')
-        ->andReturn(collect([new Post()]));
+        ->andReturn(collect([new Post]));
 
     artisan('publisher:install')
         ->expectsConfirmation('⚠️ Please ensure you have added the \Plank\Publisher\Contracts\Publishable interface to the models you wish to be publishable. Continue?', 'yes')
