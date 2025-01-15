@@ -114,7 +114,7 @@ trait IsPublishable
         DB::transaction(function () {
             Publisher::withoutDraftContent(fn () => $this->refresh());
             $this->{$this->draftColumn()} = null;
-            $this->{$this->workflowColumn()} = Status::published();
+            $this->{$this->workflowColumn()} = static::workflow()::published();
             $this->save();
         });
     }
