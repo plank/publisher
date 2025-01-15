@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Contracts\PublishingStatus;
-use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Exceptions\RevertException;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Scopes\PublisherScope;
