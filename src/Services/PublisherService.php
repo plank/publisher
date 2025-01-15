@@ -2,6 +2,7 @@
 
 namespace Plank\Publisher\Services;
 
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -65,6 +66,26 @@ class PublisherService
     public function restrictDraftContent(): void
     {
         $this->draftContentAllowed = false;
+    }
+
+    public function withDraftContent(Closure $closure): mixed
+    {
+        $scope = $this->draftContentAllowed;
+        $this->draftContentAllowed = true;
+        $result = $closure();
+        $this->draftContentAllowed = $scope;
+
+        return $result;
+    }
+
+    public function withoutDraftContent(Closure $closure): mixed
+    {
+        $scope = $this->draftContentAllowed;
+        $this->draftContentAllowed = false;
+        $result = $closure();
+        $this->draftContentAllowed = $scope;
+
+        return $result;
     }
 
     /**

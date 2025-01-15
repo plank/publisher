@@ -8,6 +8,11 @@ use Illuminate\Support\Collection;
 interface Publishable extends PublishableAttributes, PublishableEvents
 {
     /**
+     * Drop all draft changes and restore the model as published
+     */
+    public function revert(): void;
+
+    /**
      * Get the name of the column that stores the draft attributes
      */
     public function draftColumn(): string;
