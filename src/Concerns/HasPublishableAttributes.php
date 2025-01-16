@@ -121,11 +121,8 @@ trait HasPublishableAttributes
     {
         $attributes = array_filter([
             $this->getKeyName(),
-            $this->getQualifiedKeyName(),
             $this->getCreatedAtColumn(),
-            $this->getQualifiedCreatedAtColumn(),
             $this->getUpdatedAtColumn(),
-            $this->getQualifiedUpdatedAtColumn(),
             $this->workflowColumn(),
             $this->draftColumn(),
             $this->hasBeenPublishedColumn(),
