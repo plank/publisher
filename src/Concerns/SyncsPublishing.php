@@ -6,6 +6,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use Plank\LaravelHush\Concerns\HushesHandlers;
 use Plank\Publisher\Contracts\Publishable;
 
 /**
@@ -14,6 +15,8 @@ use Plank\Publisher\Contracts\Publishable;
  */
 trait SyncsPublishing
 {
+    use HushesHandlers;
+
     public static function bootSyncsPublishing()
     {
         static::drafting(function (Publishable&Model $model) {
@@ -54,7 +57,7 @@ trait SyncsPublishing
         $this->save();
 
         if ($from->isPublished() && $this->{$this->shouldDeleteColumn()}) {
-            $this->delete();
+            $this->withoutHandler('deleting', fn () => $this->delete(), [static::class]);
         }
     }
 
@@ -67,7 +70,8 @@ trait SyncsPublishing
         }
 
         $this->{$this->shouldDeleteColumn()} = true;
-        $this->save();
+
+        $this->saveQuietly();
 
         return false;
     }
