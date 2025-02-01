@@ -57,7 +57,7 @@ trait SyncsPublishing
         $this->save();
 
         if ($from->isPublished() && $this->{$this->shouldDeleteColumn()}) {
-            $this->withoutHandler('deleting', fn () => $this->delete(), [static::class]);
+            $this->withoutHandler('deleting', fn () => $this->delete(), [SyncsPublishing::class]);
         }
     }
 
