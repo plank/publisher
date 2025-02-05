@@ -6,7 +6,7 @@ use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
 
 it('does not set has_been_published on publishable models when created in draft', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -18,7 +18,7 @@ it('does not set has_been_published on publishable models when created in draft'
 });
 
 it('sets has_been_published on publishable models when created as published', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -31,7 +31,7 @@ it('sets has_been_published on publishable models when created as published', fu
 
 it('maintains has_been_published state after unpublishing', function () {
     /** @var Post $post */
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -53,7 +53,7 @@ it('maintains has_been_published state after unpublishing', function () {
 
 it('allows revert for content that has been published', function () {
     /** @var Post $post */
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -84,7 +84,7 @@ it('allows revert for content that has been published', function () {
 
 it('does nothing for revert when content has never been published', function () {
     /** @var Post $post */
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',

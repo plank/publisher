@@ -9,7 +9,7 @@ beforeEach(function () {
 });
 
 it('correctly filters results based on workflow state', function () {
-    $draft = Post::create([
+    $draft = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => '(Published) My First Post',
         'slug' => 'my-first-post',
@@ -21,7 +21,7 @@ it('correctly filters results based on workflow state', function () {
     $draft->status = 'draft';
     $draft->save();
 
-    Post::create([
+    Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => '(Published) My Second Post',
         'slug' => 'my-second-post',
