@@ -11,6 +11,5 @@ class Conflict
         public string $column,
         public ConflictType $type,
         public array $params = [],
-    ) {
-    }
+    ) {}
 }

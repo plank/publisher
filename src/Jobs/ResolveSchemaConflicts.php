@@ -27,14 +27,13 @@ class ResolveSchemaConflicts implements ShouldQueue
     public function __construct(
         public string $pk,
         public Collection $conflicts,
-    ) {
-    }
+    ) {}
 
     public function handle()
     {
         $table = $this->conflicts->first()->table;
         $draft = config()->get('publisher.columns.draft');
-        
+
         $rows = DB::table($table)
             ->whereNotNull($draft)
             ->get([$this->pk, $draft]);
@@ -51,7 +50,7 @@ class ResolveSchemaConflicts implements ShouldQueue
     protected function resolve(object $row): string
     {
         $resolved = $this->conflicts->reduce(function (object $resolved, Conflict $conflict) {
-            return match($conflict->type) {
+            return match ($conflict->type) {
                 ConflictType::Dropped => $this->resolveDropped($resolved, $conflict),
                 ConflictType::Renamed => $this->resolveRenamed($resolved, $conflict),
             };
@@ -71,7 +70,7 @@ class ResolveSchemaConflicts implements ShouldQueue
     {
         $data = $resolved->{$conflict->column};
         unset($resolved->{$conflict->column});
-        
+
         $renamed = $conflict->params['renamedTo'];
         $resolved->{$renamed} = $data;
 

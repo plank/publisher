@@ -75,7 +75,7 @@ trait DetectPublisherConflicts
             $table,
             $command->from,
             ConflictType::Renamed,
-            [ 'renamedTo' => $command->to ]
+            ['renamedTo' => $command->to]
         ));
     }
 
