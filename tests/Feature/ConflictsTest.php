@@ -8,7 +8,7 @@ use Plank\Publisher\Tests\Helpers\Models\Post;
 
 use function Pest\Laravel\artisan;
 
-it('handles conflicting changes to publishable model schemas without any models to heal', function () {
+it('handles conflicting changes to publishable model schemas', function () {
     Queue::fake();
 
     artisan('migrate', [
