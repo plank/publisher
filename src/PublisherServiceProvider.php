@@ -3,6 +3,8 @@
 namespace Plank\Publisher;
 
 use Illuminate\Contracts\Routing\UrlGenerator;
+use Illuminate\Database\Events\MigrationEnded;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Plank\Publisher\Commands\PublisherMigrations;
 use Plank\Publisher\Middleware\PublisherMiddleware;
@@ -50,7 +52,8 @@ class PublisherServiceProvider extends PackageServiceProvider
         $this->bindService()
             ->defineGates()
             ->overrideUrlGenerator()
-            ->registerMiddleware();
+            ->registerMiddleware()
+            ->listenForSchemaChanges();
     }
 
     public function bindService(): self
@@ -120,6 +123,15 @@ class PublisherServiceProvider extends PackageServiceProvider
     protected function registerMiddleware(): self
     {
         $this->app['router']->aliasMiddleware('publisher', PublisherMiddleware::class);
+
+        return $this;
+    }
+
+    protected function listenForSchemaChanges(): self
+    {
+        if ($resolver = config()->get('publisher.conflicts.listener')) {
+            Event::listen(MigrationEnded::class, $resolver);
+        }
 
         return $this;
     }
