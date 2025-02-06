@@ -4,7 +4,7 @@ use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
 
 it('filters results to models that are only in draft', function () {
-    $draft = Post::create([
+    $draft = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => '(Published) My First Post',
         'slug' => 'my-first-post',
@@ -16,7 +16,7 @@ it('filters results to models that are only in draft', function () {
     $draft->status = 'draft';
     $draft->save();
 
-    Post::create([
+    Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => '(Published) My Second Post',
         'slug' => 'my-second-post',

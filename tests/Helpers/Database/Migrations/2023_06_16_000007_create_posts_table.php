@@ -12,7 +12,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('author_id');
             $table->string('title');
+            $table->string('subtitle');
             $table->string('slug');
+            $table->text('teaser');
             $table->text('body');
             $table->string('status');
             $table->boolean('has_been_published')->default(false);

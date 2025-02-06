@@ -19,8 +19,10 @@ class PostFactory extends Factory
         $attributes = [
             'author_id' => User::query()->inRandomOrder()->first()?->id ?? User::factory(),
             'title' => $title,
+            'subtitle' => $this->faker->words(3, true),
             'slug' => (string) str($title)->slug(),
-            'body' => $this->faker->paragraphs($this->faker->numberBetween(1, 3), true),
+            'teaser' => $this->faker->paragraphs(1, true),
+            'body' => $this->faker->paragraphs($this->faker->numberBetween(1, 5), true),
         ];
 
         return [
