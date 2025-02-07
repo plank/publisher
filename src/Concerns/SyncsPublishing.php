@@ -34,10 +34,18 @@ trait SyncsPublishing
 
     public function syncPublishingToDependents(): void
     {
-        $this->publishingDependents()
-            ->map(fn (string $relation) => $this->nestedPluck($relation))
-            ->flatten()
+        $this->getPublishingDependents()
             ->each(fn (Publishable&Model $model) => $model->syncPublishingFrom($this));
+    }
+
+    /**
+     * @return Collection<Publishable&Model>
+     */
+    public function getPublishingDependents(): Collection
+    {
+        return $this->publishingDependents()
+            ->map(fn (string $relation) => $this->nestedPluck($relation))
+            ->flatten();
     }
 
     public function publishingDependents(): Collection
