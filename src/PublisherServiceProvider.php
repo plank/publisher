@@ -139,7 +139,7 @@ class PublisherServiceProvider extends PackageServiceProvider
         $this->app->bindIf(DetectsConflicts::class, function () {
             $db = $this->app->make('db.connection');
             $class = config()->get('publisher.conflicts.schema');
-            
+
             return new $class($db);
         });
 

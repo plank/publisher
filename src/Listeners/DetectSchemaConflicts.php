@@ -4,7 +4,6 @@ namespace Plank\Publisher\Listeners;
 
 use Closure;
 use Illuminate\Container\Container;
-use Illuminate\Database\Connection;
 use Illuminate\Database\Events\MigrationEnded;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Collection;
