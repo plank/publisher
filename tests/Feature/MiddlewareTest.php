@@ -8,7 +8,7 @@ use Plank\Publisher\Tests\Helpers\Models\User;
 use function Pest\Laravel\get;
 
 beforeEach(function () {
-    $draft = Post::query()->create([
+    $draft = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => '(Published) My First Post',
         'slug' => 'my-first-post',

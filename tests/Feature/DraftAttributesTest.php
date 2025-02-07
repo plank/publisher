@@ -9,7 +9,7 @@ beforeEach(function () {
 });
 
 it('puts attributes in columns and draft when a model is created in `draft`', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -21,7 +21,7 @@ it('puts attributes in columns and draft when a model is created in `draft`', fu
 });
 
 it('does not put attributes in draft when a model is created as published', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -34,7 +34,7 @@ it('does not put attributes in draft when a model is created as published', func
 
 it('updates draft values when a model is saved while in draft', function () {
     /** @var Post $post */
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -58,7 +58,7 @@ it('updates draft values when a model is saved while in draft', function () {
 });
 
 it('maintains published state when a model is updated while published', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -85,7 +85,7 @@ it('clears draft attributes when a model is published', function () {
 });
 
 it('populates drafts on retrieval of publishable models', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -103,7 +103,7 @@ it('populates drafts on retrieval of publishable models', function () {
 });
 
 it('sets attributes from draft when a publishable model is published', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
@@ -132,7 +132,7 @@ it('sets attributes from draft when a publishable model is published', function 
 });
 
 it('publishes changes queued in draft when published', function () {
-    $post = Post::create([
+    $post = Post::factory()->create([
         'author_id' => User::first()->id,
         'title' => 'My First Post',
         'slug' => 'my-first-post',
