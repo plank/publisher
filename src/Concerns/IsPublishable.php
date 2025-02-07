@@ -120,7 +120,7 @@ trait IsPublishable
 
     public function draftColumn(): string
     {
-        return config('publisher.columns.draft', 'draft');
+        return config()->get('publisher.columns.draft', 'draft');
     }
 
     public function workflowColumn(): string

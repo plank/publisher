@@ -28,7 +28,7 @@ class PublisherService
             }
         }
 
-        return (bool) $request->query(config('publisher.urls.previewKey'));
+        return (bool) $request->query(config()->get('publisher.urls.previewKey'));
     }
 
     public function canPublish(Publishable&Model $model): bool
