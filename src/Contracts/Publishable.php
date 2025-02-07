@@ -108,6 +108,13 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function publishingDependents(): Collection;
 
     /**
+     * Resolve the publishing dependent models
+     *
+     * @return Collection<Publishable&Model>
+     */
+    public function getPublishingDependents(): Collection;
+
+    /**
      * Queue the model for deletion if it's owner is not published
      */
     public function queueForDelete(): ?bool;
