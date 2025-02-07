@@ -7,6 +7,7 @@ use Illuminate\Database\Events\MigrationEnded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Plank\Publisher\Commands\PublisherMigrations;
+use Plank\Publisher\Contracts\DetectsConflicts;
 use Plank\Publisher\Middleware\PublisherMiddleware;
 use Plank\Publisher\Routing\PublisherUrlGenerator;
 use Plank\Publisher\Services\PublisherService;
@@ -129,9 +130,20 @@ class PublisherServiceProvider extends PackageServiceProvider
 
     protected function listenForSchemaChanges(): self
     {
-        if ($resolver = config()->get('publisher.conflicts.listener')) {
-            Event::listen(MigrationEnded::class, $resolver);
+        $resolver = config()->get('publisher.conflicts.listener');
+
+        if ($resolver === null) {
+            return $this;
         }
+
+        $this->app->bindIf(DetectsConflicts::class, function () {
+            $db = $this->app->make('db.connection');
+            $class = config()->get('publisher.conflicts.schema');
+            
+            return new $class($db);
+        });
+
+        Event::listen(MigrationEnded::class, $resolver);
 
         return $this;
     }
