@@ -4,7 +4,6 @@ namespace Plank\Publisher\Listeners;
 
 use Closure;
 use Illuminate\Container\Container;
-use Illuminate\Database\Connection;
 use Illuminate\Database\Events\MigrationEnded;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Collection;
@@ -49,20 +48,14 @@ class DetectSchemaConflicts
     {
         $active = $this->container->make('db.schema');
 
-        /** @var Connection $db */
-        $db = $this->container->make('db.connection');
-
-        /** @var class-string<Builder&DetectsConflicts> $class */
-        $class = config()->get('publisher.conflicts.schema');
-        $schema = new $class($db);
-
-        $this->container->instance('db.schema', $schema);
-
-        $db->pretend(function () use ($callback) {
-            return $callback();
-        });
-
-        $this->container->instance('db.schema', $active);
+        try {
+            /** @var Builder&DetectsConflicts $schema */
+            $schema = $this->container->make(DetectsConflicts::class);
+            $this->container->instance('db.schema', $schema);
+            $schema->getConnection()->pretend(fn () => $callback());
+        } finally {
+            $this->container->instance('db.schema', $active);
+        }
 
         return $schema->getConflicts();
     }
