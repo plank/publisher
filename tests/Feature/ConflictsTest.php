@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Queue;
-use Plank\Publisher\Enums\ConflictType;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Jobs\ResolveSchemaConflicts;
 use Plank\Publisher\Tests\Helpers\Models\Post;
@@ -18,12 +17,21 @@ it('handles conflicting changes to publishable model schemas', function () {
 
     $jobs = Queue::pushedJobs()[ResolveSchemaConflicts::class];
 
-    expect($jobs)->toHaveCount(1);
-    expect($job = $jobs[0]['job'])->toBeInstanceOf(ResolveSchemaConflicts::class);
-    expect($conflicts = $job->conflicts)->toHaveCount(3);
-    expect($conflicts[0]->type)->toBe(ConflictType::Renamed);
-    expect($conflicts[1]->type)->toBe(ConflictType::Dropped);
-    expect($conflicts[2]->type)->toBe(ConflictType::Dropped);
+    expect($jobs)->toHaveCount(4);
+
+    expect($jobs[0]['job']->renamed)->toContain([
+        'from' => 'teaser',
+        'to' => 'blurb',
+    ]);
+
+    expect($jobs[1]['job']->dropped)->toContain('subtitle');
+
+    expect($jobs[2]['job']->renamed)->toContain([
+        'from' => 'body',
+        'to' => 'message',
+    ]);
+
+    expect($jobs[3]['job']->dropped)->toContain('name');
 });
 
 it('resolves conflicts to publishable models correctly', function () {

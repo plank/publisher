@@ -5,10 +5,12 @@ namespace Plank\Publisher\Tests;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Auth;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Plank\LaravelModelResolver\LaravelModelResolverServiceProvider;
+use Plank\LaravelSchemaEvents\LaravelSchemaEventsServiceProvider;
 use Plank\Publisher\PublisherServiceProvider;
 use Plank\Publisher\Tests\Helpers\Models\User;
-use Tests\Helpers\Controllers\PostController;
-use Tests\Helpers\Controllers\TestController;
+use Tests\Publisher\Tests\Helpers\Controllers\PostController;
+use Tests\Publisher\Tests\Helpers\Controllers\TestController;
 
 class TestCase extends Orchestra
 {
@@ -17,7 +19,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Plank\\Publisher\\Tests\\Helper\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Plank\\Publisher\\Tests\\Helpers\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
 
         $this->artisan('migrate', [
@@ -33,6 +35,8 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
+            LaravelModelResolverServiceProvider::class,
+            LaravelSchemaEventsServiceProvider::class,
             PublisherServiceProvider::class,
         ];
     }

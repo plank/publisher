@@ -10,12 +10,8 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Plank\Publisher\Enums\ConflictType;
-use Plank\Publisher\ValueObjects\Conflict;
+use Plank\LaravelModelResolver\Facades\Models;
 
-/**
- * @property Collection<Conflict> $conflicts
- */
 class ResolveSchemaConflicts implements ShouldQueue
 {
     use Batchable;
@@ -25,22 +21,26 @@ class ResolveSchemaConflicts implements ShouldQueue
     use SerializesModels;
 
     public function __construct(
-        public string $pk,
-        public Collection $conflicts,
+        public string $table,
+        public Collection $renamed,
+        public Collection $dropped,
     ) {}
 
     public function handle()
     {
-        $table = $this->conflicts->first()->table;
         $draft = config()->get('publisher.columns.draft');
 
-        $rows = DB::table($table)
+        $pk = ($class = Models::fromTable($this->table))
+            ? (new $class)->getKeyName()
+            : 'id';
+
+        $rows = DB::table($this->table)
             ->whereNotNull($draft)
-            ->get([$this->pk, $draft]);
+            ->get([$pk, $draft]);
 
         foreach ($rows as $row) {
-            DB::table($table)
-                ->where($this->pk, $row->{$this->pk})
+            DB::table($this->table)
+                ->where($pk, $row->{$pk})
                 ->update([
                     $draft => $this->resolve(json_decode($row->{$draft})),
                 ]);
@@ -49,31 +49,21 @@ class ResolveSchemaConflicts implements ShouldQueue
 
     protected function resolve(object $row): string
     {
-        $resolved = $this->conflicts->reduce(function (object $resolved, Conflict $conflict) {
-            return match ($conflict->type) {
-                ConflictType::Dropped => $this->resolveDropped($resolved, $conflict),
-                ConflictType::Renamed => $this->resolveRenamed($resolved, $conflict),
-            };
-        }, $row);
+        $this->renamed->each(fn (array $rename) => $this->resolveRenamed($row, $rename['from'], $rename['to']));
+        $this->dropped->each(fn (string $column) => $this->resolveDropped($row, $column));
 
-        return json_encode($resolved);
+        return json_encode($row);
     }
 
-    protected function resolveDropped(object $resolved, Conflict $conflict): object
+    protected function resolveDropped(object $row, string $column): void
     {
-        unset($resolved->{$conflict->column});
-
-        return $resolved;
+        unset($row->{$column});
     }
 
-    protected function resolveRenamed(object $resolved, Conflict $conflict): object
+    protected function resolveRenamed(object $row, string $from, string $to): void
     {
-        $data = $resolved->{$conflict->column};
-        unset($resolved->{$conflict->column});
-
-        $renamed = $conflict->params['renamedTo'];
-        $resolved->{$renamed} = $data;
-
-        return $resolved;
+        $data = $row->{$from};
+        unset($row->{$from});
+        $row->{$to} = $data;
     }
 }
