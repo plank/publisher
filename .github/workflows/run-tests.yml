@@ -48,6 +48,7 @@ jobs:
       - name: Install dependencies
         run: |
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+          composer dump-autoload --optimize
 
       - name: List Installed Dependencies
         run: composer show -D
@@ -93,6 +94,7 @@ jobs:
       - name: Install dependencies
         run: |
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+          composer dump-autoload --optimize
 
       - name: List Installed Dependencies
         run: composer show -D

@@ -114,6 +114,7 @@ trait IsPublishable
             Publisher::withoutDraftContent(fn () => $this->refresh());
             $this->{$this->draftColumn()} = null;
             $this->{$this->workflowColumn()} = static::workflow()::published();
+            $this->{$this->shouldDeleteColumn()} = false;
             $this->save();
         });
     }

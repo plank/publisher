@@ -2,9 +2,7 @@
 
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Jobs\ResolveSchemaConflicts;
-use Plank\Publisher\Listeners\DetectSchemaConflicts;
-use Plank\Publisher\Schema\ConflictSchema;
-use Plank\Publisher\Services\KeyResolver;
+use Plank\Publisher\Listeners\HandleSchemaConflicts;
 
 return [
     'workflow' => Status::class,
@@ -24,10 +22,8 @@ return [
         'nova-vendor*',
     ],
     'conflicts' => [
-        'schema' => ConflictSchema::class,
         'queue' => 'sync',
-        'listener' => DetectSchemaConflicts::class,
+        'listener' => HandleSchemaConflicts::class,
         'job' => ResolveSchemaConflicts::class,
-        'resolver' => KeyResolver::class,
     ],
 ];
