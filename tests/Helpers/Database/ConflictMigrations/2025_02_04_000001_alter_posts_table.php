@@ -10,6 +10,9 @@ return new class extends Migration
     {
         Schema::table('posts', function (Blueprint $table) {
             $table->renameColumn('teaser', 'blurb');
+        });
+
+        Schema::table('posts', function (Blueprint $table) {
             $table->dropColumn('body');
         });
 

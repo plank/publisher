@@ -17,21 +17,23 @@ it('handles conflicting changes to publishable model schemas', function () {
 
     $jobs = Queue::pushedJobs()[ResolveSchemaConflicts::class];
 
-    expect($jobs)->toHaveCount(4);
+    expect($jobs)->toHaveCount(5);
 
     expect($jobs[0]['job']->renamed)->toContain([
         'from' => 'teaser',
         'to' => 'blurb',
     ]);
 
-    expect($jobs[1]['job']->dropped)->toContain('subtitle');
+    expect($jobs[1]['job']->dropped)->toContain('body');
 
-    expect($jobs[2]['job']->renamed)->toContain([
+    expect($jobs[2]['job']->dropped)->toContain('subtitle');
+
+    expect($jobs[3]['job']->renamed)->toContain([
         'from' => 'body',
         'to' => 'message',
     ]);
 
-    expect($jobs[3]['job']->dropped)->toContain('name');
+    expect($jobs[4]['job']->dropped)->toContain('name');
 });
 
 it('resolves conflicts to publishable models correctly', function () {
