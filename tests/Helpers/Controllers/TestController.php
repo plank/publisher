@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Helpers\Controllers;
+namespace Tests\Publisher\Tests\Helpers\Controllers;
 
 use Illuminate\Routing\Controller;
 use Plank\Publisher\Facades\Publisher;

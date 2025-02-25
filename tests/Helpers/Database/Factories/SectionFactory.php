@@ -1,6 +1,6 @@
 <?php
 
-namespace Plank\Publisher\Tests\Helper\Database\Factories;
+namespace Plank\Publisher\Tests\Helpers\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Plank\Publisher\Enums\Status;
