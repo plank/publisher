@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Plank\LaravelSchemaEvents\Events\TableChanged;
 use Plank\Publisher\Commands\PublisherMigrations;
-use Plank\Publisher\Listeners\HandleSchemaConflicts;
 use Plank\Publisher\Middleware\PublisherMiddleware;
 use Plank\Publisher\Routing\PublisherUrlGenerator;
 use Plank\Publisher\Services\PublisherService;

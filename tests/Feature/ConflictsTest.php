@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Queue;
-use Plank\Publisher\Enums\ConflictType;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Jobs\ResolveSchemaConflicts;
 use Plank\Publisher\Tests\Helpers\Models\Post;
