@@ -9,7 +9,7 @@ class HandleSchemaConflicts
 {
     public function handle(TableChanged $event)
     {
-        if (empty($event->renamedColumns) && empty($event->droppedColumns)) {
+        if ($event->renamedColumns->isEmpty() && $event->droppedColumns->isEmpty()) {
             return;
         }
 
