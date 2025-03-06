@@ -5,6 +5,7 @@ namespace Plank\Publisher\Concerns;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Plank\Publisher\Contracts\Publishable;
+use Plank\Publisher\Exceptions\DraftException;
 use Plank\Publisher\Facades\Publisher;
 
 /**
@@ -16,6 +17,12 @@ trait HasPublishableAttributes
     public static function bootHasPublishableAttributes()
     {
         static::retrieved(function (Publishable&Model $model) {
+            $column = $model->draftColumn();
+
+            if ($model->{$column} === null) {
+                throw new DraftException('Attempting to load content from `'.$column.'` but it has not been set. [model: '.get_class($model).'][id: '.$model->getKey().'].');
+            }
+
             if (Publisher::draftContentAllowed() && $model->isNotPublished()) {
                 $model->syncAttributesFromDraft();
             }
