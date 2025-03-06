@@ -76,6 +76,10 @@ trait QueriesPublishableModels
 
     protected function unpublishedWhere($query, $column, $operator = null, $value = null)
     {
+        if ($column === $this->qualifyColumn($column)) {
+            $column = str($column)->after('.')->toString();
+        }
+
         return $query->whereNot($this->model->workflowColumn(), $this->model::workflow()::published())
             ->where($this->model->draftColumn().'->'.$column, $operator, $value, 'and');
     }
