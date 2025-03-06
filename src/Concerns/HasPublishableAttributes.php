@@ -17,13 +17,13 @@ trait HasPublishableAttributes
     public static function bootHasPublishableAttributes()
     {
         static::retrieved(function (Publishable&Model $model) {
-            $column = $model->draftColumn();
-
-            if ($model->{$column} === null) {
-                throw new DraftException('Attempting to load content from `'.$column.'` but it has not been set. [model: '.get_class($model).'][id: '.$model->getKey().'].');
-            }
-
             if (Publisher::draftContentAllowed() && $model->isNotPublished()) {
+                $column = $model->draftColumn();
+
+                if ($model->{$column} === null) {
+                    throw new DraftException('Attempting to load content from `'.$column.'` but it has not been set. [model: '.get_class($model).'][id: '.$model->getKey().'].');
+                }
+
                 $model->syncAttributesFromDraft();
             }
         });
