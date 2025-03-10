@@ -3,6 +3,7 @@
 namespace Plank\Publisher\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 interface Publishable extends PublishableAttributes, PublishableEvents
@@ -113,6 +114,75 @@ interface Publishable extends PublishableAttributes, PublishableEvents
      * @return Collection<Publishable&Model>
      */
     public function getPublishingDependents(): Collection;
+
+    /**
+     * Define a many-to-many relationship.
+     *
+     * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  class-string<TRelatedModel>  $related
+     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>|null  $table
+     * @param  string|null  $foreignPivotKey
+     * @param  string|null  $relatedPivotKey
+     * @param  string|null  $parentKey
+     * @param  string|null  $relatedKey
+     * @param  string|null  $relation
+     * @return \Plank\Publisher\Relations\PublishableBelongsToMany<TRelatedModel, $this>
+     */
+    public function publishableBelongsToMany(
+        $related,
+        $table = null,
+        $foreignPivotKey = null,
+        $relatedPivotKey = null,
+        $parentKey = null,
+        $relatedKey = null,
+        $relation = null,
+    );
+
+    /**
+     * Define a polymorphic many-to-many relationship.
+     *
+     * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  class-string<TRelatedModel>  $related
+     * @param  string  $name
+     * @param  string|null  $table
+     * @param  string|null  $foreignPivotKey
+     * @param  string|null  $relatedPivotKey
+     * @param  string|null  $parentKey
+     * @param  string|null  $relatedKey
+     * @param  string|null  $relation
+     * @param  bool  $inverse
+     * @return \Plank\Publisher\Relations\PublishableMorphToMany<TRelatedModel, $this>
+     */
+    public function publishableMorphToMany(
+        $related,
+        $name,
+        $table = null,
+        $foreignPivotKey = null,
+        $relatedPivotKey = null,
+        $parentKey = null,
+        $relatedKey = null,
+        $relation = null,
+        $inverse = false,
+    );
+
+    /**
+     * Resolve the publishable pivotted relations
+     *
+     * @return Collection<PublishablePivot&Relation>
+     */
+    public function publishablePivots(): Collection;
+
+    /**
+     * Delete any pivots that were queued for detaching
+     */
+    public function deleteQueuedPivots(): void;
+
+    /**
+     * Publish all pivots
+     */
+    public function publishAllPivots(): void;
 
     /**
      * Queue the model for deletion if it's owner is not published

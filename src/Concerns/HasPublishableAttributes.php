@@ -150,19 +150,4 @@ trait HasPublishableAttributes
     {
         return [];
     }
-
-    public function hasDirtyDraftableAttributes(): bool
-    {
-        return ! empty($this->getDirtyDraftableAttributes());
-    }
-
-    public function getDirtyDraftableAttributes(): array
-    {
-        $excluded = array_merge(
-            $this->excludedFromDraftByDefault(),
-            $this->excludedFromDraft()
-        );
-
-        return array_diff_key($this->getDirty(), array_flip($excluded));
-    }
 }
