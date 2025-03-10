@@ -14,7 +14,7 @@ trait DisablesDraftQueryForPivot
     protected function addWhereConstraints()
     {
         /**
-         * Pivotted relationships use the related model's eloquent builder to 
+         * Pivotted relationships use the related model's eloquent builder to
          * query the pivot table. In the case you are querying for a Publishable
          * model – while draft content is allowed – you don't want the draft
          * queries to be applied to the pivot table constraints.
