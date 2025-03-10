@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
+use Plank\LaravelModelResolver\Facades\Models;
 use Plank\Publisher\Contracts\Publishable;
-use Symfony\Component\Finder\SplFileInfo;
 
 class PublisherService
 {
@@ -70,22 +69,28 @@ class PublisherService
 
     public function withDraftContent(Closure $closure): mixed
     {
-        $scope = $this->draftContentAllowed;
-        $this->draftContentAllowed = true;
-        $result = $closure();
-        $this->draftContentAllowed = $scope;
+        $draftState = $this->draftContentAllowed;
 
-        return $result;
+        try {
+            $this->draftContentAllowed = true;
+
+            return $closure();
+        } finally {
+            $this->draftContentAllowed = $draftState;
+        }
     }
 
     public function withoutDraftContent(Closure $closure): mixed
     {
-        $scope = $this->draftContentAllowed;
-        $this->draftContentAllowed = false;
-        $result = $closure();
-        $this->draftContentAllowed = $scope;
+        $draftState = $this->draftContentAllowed;
 
-        return $result;
+        try {
+            $this->draftContentAllowed = false;
+
+            return $closure();
+        } finally {
+            $this->draftContentAllowed = $draftState;
+        }
     }
 
     /**
@@ -93,23 +98,6 @@ class PublisherService
      */
     public function publishableModels(): Collection
     {
-        return Collection::wrap(File::allFiles(app_path()))
-            ->map(fn (SplFileInfo $file) => $this->getClassName($file))
-            ->filter(fn (string $className) => class_exists($className))
-            ->filter(function (string $class) {
-                return is_a($class, Model::class, true)
-                    && is_a($class, Publishable::class, true)
-                    && ! (new \ReflectionClass($class))->isAbstract();
-            })
-            ->map(fn ($class) => new $class)
-            ->values();
-    }
-
-    protected function getClassName(SplFileInfo $modelFile): string
-    {
-        return str($modelFile->getRelativePathname())
-            ->replace(DIRECTORY_SEPARATOR, '\\')
-            ->replace('.php', '')
-            ->prepend('App\\');
+        return Models::implements(Publishable::class);
     }
 }

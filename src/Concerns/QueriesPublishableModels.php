@@ -20,19 +20,19 @@ trait QueriesPublishableModels
     public function onlyPublished(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
-            ->where($this->model->hasBeenPublishedColumn(), true);
+            ->where($this->model->qualifyColumn($this->model->hasBeenPublishedColumn()), true);
     }
 
     public function onlyDraft(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
-            ->whereNot($this->model->workflowColumn(), $this->model::workflow()::published());
+            ->whereNot($this->model->qualifyColumn($this->model->workflowColumn()), $this->model::workflow()::published());
     }
 
     public function withoutQueuedDeletes(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
-            ->where($this->model->shouldDeleteColumn(), false);
+            ->where($this->model->qualifyColumn($this->model->shouldDeleteColumn()), false);
     }
 
     public function withQueuedDeletes(): Builder&PublisherQueries
@@ -43,7 +43,7 @@ trait QueriesPublishableModels
     public function onlyQueuedDeletes(): Builder&PublisherQueries
     {
         return $this->withoutGlobalScope(PublisherScope::class)
-            ->where($this->model->shouldDeleteColumn(), true);
+            ->where($this->model->qualifyColumn($this->model->shouldDeleteColumn()), true);
     }
 
     public function where($column, $operator = null, $value = null, $boolean = 'and')
@@ -70,7 +70,7 @@ trait QueriesPublishableModels
 
     protected function publishedWhere($query, $column, $operator = null, $value = null)
     {
-        return $query->where($this->model->workflowColumn(), $this->model::workflow()::published())
+        return $query->where($this->model->qualifyColumn($this->model->workflowColumn()), $this->model::workflow()::published())
             ->where($column, $operator, $value, 'and');
     }
 
@@ -80,7 +80,7 @@ trait QueriesPublishableModels
             $column = str($column)->after('.')->toString();
         }
 
-        return $query->whereNot($this->model->workflowColumn(), $this->model::workflow()::published())
+        return $query->whereNot($this->model->qualifyColumn($this->model->workflowColumn()), $this->model::workflow()::published())
             ->where($this->model->draftColumn().'->'.$column, $operator, $value, 'and');
     }
 
