@@ -20,6 +20,7 @@ trait IsPublishable
 {
     use FiresPublishingEvents;
     use HasPublishableAttributes;
+    use HasPublishableRelationships;
     use SyncsPublishing;
 
     public function initializeIsPublishable()
@@ -112,6 +113,9 @@ trait IsPublishable
 
         DB::transaction(function () {
             Publisher::withoutDraftContent(fn () => $this->refresh());
+
+            $this->revertPublishableRelations();
+
             $this->{$this->draftColumn()} = null;
             $this->{$this->workflowColumn()} = static::workflow()::published();
             $this->{$this->shouldDeleteColumn()} = false;

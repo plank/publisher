@@ -18,6 +18,10 @@ class PublisherScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
+        if (! $builder instanceof PublisherBuilder) {
+            return;
+        }
+
         if (Publisher::draftContentRestricted()) {
             $builder->onlyPublished();
         } else {
