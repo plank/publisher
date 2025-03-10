@@ -23,14 +23,4 @@ interface PublishableAttributes
      * Determine if a column should be excluded from draft attributes on the Model
      */
     public function isExcludedFromDraft(string $column): bool;
-
-    /**
-     * Determine if there are any dirty draftable attributes
-     */
-    public function hasDirtyDraftableAttributes(): bool;
-
-    /**
-     * Get the attributes which are dirty as drafts
-     */
-    public function getDirtyDraftableAttributes(): array;
 }
