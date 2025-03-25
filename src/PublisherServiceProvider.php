@@ -4,7 +4,6 @@ namespace Plank\Publisher;
 
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Plank\LaravelSchemaEvents\Events\TableChanged;
 use Plank\Publisher\Commands\PublisherMigrations;
 use Plank\Publisher\Middleware\PublisherMiddleware;
