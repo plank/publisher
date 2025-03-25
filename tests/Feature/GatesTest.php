@@ -33,7 +33,7 @@ it('should not allow unpublishing when the unpublishing gate returns false', fun
         'body' => 'A second post.',
         'status' => 'published',
     ]);
-    
+
     $post->status = Status::unpublished();
     expect(fn () => $post->save())->toThrow('This action is unauthorized.');
 });
