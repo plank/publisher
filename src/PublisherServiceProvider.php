@@ -50,7 +50,6 @@ class PublisherServiceProvider extends PackageServiceProvider
     public function bootingPackage()
     {
         $this->bindService()
-            ->defineGates()
             ->overrideUrlGenerator()
             ->registerMiddleware()
             ->listenForSchemaChanges();
@@ -60,29 +59,6 @@ class PublisherServiceProvider extends PackageServiceProvider
     {
         if (! $this->app->bound('publisher')) {
             $this->app->scoped('publisher', fn () => new PublisherService);
-        }
-
-        return $this;
-    }
-
-    protected function defineGates(): self
-    {
-        if (! Gate::has('publish')) {
-            Gate::define('publish', function ($user, $model) {
-                return $user !== null;
-            });
-        }
-
-        if (! Gate::has('unpublish')) {
-            Gate::define('unpublish', function ($user, $model) {
-                return $user !== null;
-            });
-        }
-
-        if (! Gate::has('view-draft-content')) {
-            Gate::define('view-draft-content', function ($user) {
-                return $user !== null;
-            });
         }
 
         return $this;
