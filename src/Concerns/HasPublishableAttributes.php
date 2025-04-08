@@ -112,8 +112,8 @@ trait HasPublishableAttributes
     protected function isCount(string $key): bool
     {
         $key = str($key);
-        
-        if (!$key->endsWith('_count')) {
+
+        if (! $key->endsWith('_count')) {
             return false;
         }
 
@@ -134,8 +134,8 @@ trait HasPublishableAttributes
     protected function isSum(string $key): bool
     {
         $key = str($key);
-        
-        if (!$key->contains('_sum_')) {
+
+        if (! $key->contains('_sum_')) {
             return false;
         }
 

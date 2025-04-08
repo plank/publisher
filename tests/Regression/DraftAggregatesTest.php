@@ -39,8 +39,10 @@ it('includes withCount columns in draft when ignoreCounts is explicitly set to f
             'status' => 'published',
         ]);
 
-    $ignores = new class extends Post {
+    $ignores = new class extends Post
+    {
         protected $table = 'posts';
+
         protected bool $ignoreCounts = false;
     };
 
@@ -73,7 +75,6 @@ it('doesnt include withSum columns in draft by default', function () {
         ->withSum('comments', 'upvotes')
         ->first();
 
-
     expect($post->comments_sum_upvotes)->toBe($numberOfComments * $numberOfUpvotes);
     expect($post->draft)->toBeNull();
 
@@ -95,8 +96,10 @@ it('includes withSum columns in draft when ignoreSums is explicitly set to false
             'status' => 'published',
         ]);
 
-    $ignores = new class extends Post {
+    $ignores = new class extends Post
+    {
         protected $table = 'posts';
+
         protected bool $ignoreSums = false;
     };
 
