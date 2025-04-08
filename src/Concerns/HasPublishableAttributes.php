@@ -84,12 +84,64 @@ trait HasPublishableAttributes
         );
 
         foreach ($this->attributes as $key => $value) {
+            if ($this->ignoreCounts() && $this->isCount($key)) {
+                continue;
+            }
+
+            if ($this->ignoreSums() && $this->isSum($key)) {
+                continue;
+            }
+
             if (! in_array($key, $excluded)) {
                 $draft[$key] = $value;
             }
         }
 
         return $draft;
+    }
+
+    protected function ignoreCounts()
+    {
+        if (property_exists($this, 'ignoreCounts')) {
+            return (bool) $this->ignoreCounts;
+        }
+
+        return true;
+    }
+
+    protected function isCount(string $key): bool
+    {
+        $key = str($key);
+
+        if (! $key->endsWith('_count')) {
+            return false;
+        }
+
+        $relationship = $key->before('_count');
+
+        return method_exists($this, $relationship);
+    }
+
+    protected function ignoreSums()
+    {
+        if (property_exists($this, 'ignoreSums')) {
+            return (bool) $this->ignoreSums;
+        }
+
+        return true;
+    }
+
+    protected function isSum(string $key): bool
+    {
+        $key = str($key);
+
+        if (! $key->contains('_sum_')) {
+            return false;
+        }
+
+        $relationship = $key->before('_sum_');
+
+        return method_exists($this, $relationship);
     }
 
     protected function getDirtyKeys()
