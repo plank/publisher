@@ -26,4 +26,7 @@ return [
         'listener' => HandleSchemaConflicts::class,
         'job' => ResolveSchemaConflicts::class,
     ],
+    'ignore' => [
+        'counts' => true,
+    ],
 ];
