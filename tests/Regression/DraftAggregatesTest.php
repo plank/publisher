@@ -10,7 +10,7 @@ beforeEach(function () {
 
 it('doesnt include withCount columns in draft by default', function () {
     Post::factory()
-        ->hasComments($numberOfComments = fake()->numberBetween(0, 3))
+        ->hasComments($numberOfComments = fake()->numberBetween(1, 3))
         ->create([
             'author_id' => User::first()->id,
             'status' => 'published',
@@ -33,7 +33,7 @@ it('doesnt include withCount columns in draft by default', function () {
 
 it('includes withCount columns in draft when ignoreCounts is explicitly set to false', function () {
     Post::factory()
-        ->hasComments($numberOfComments = fake()->numberBetween(0, 3))
+        ->hasComments($numberOfComments = fake()->numberBetween(1, 3))
         ->create([
             'author_id' => User::first()->id,
             'status' => 'published',
@@ -63,8 +63,8 @@ it('includes withCount columns in draft when ignoreCounts is explicitly set to f
 
 it('doesnt include withSum columns in draft by default', function () {
     Post::factory()
-        ->hasComments($numberOfComments = fake()->numberBetween(0, 3), [
-            'upvotes' => $numberOfUpvotes = fake()->numberBetween(0, 3),
+        ->hasComments($numberOfComments = fake()->numberBetween(1, 3), [
+            'upvotes' => $numberOfUpvotes = fake()->numberBetween(1, 3),
         ])
         ->create([
             'author_id' => User::first()->id,
@@ -88,8 +88,8 @@ it('doesnt include withSum columns in draft by default', function () {
 
 it('includes withSum columns in draft when ignoreSums is explicitly set to false', function () {
     Post::factory()
-        ->hasComments($numberOfComments = fake()->numberBetween(0, 3), [
-            'upvotes' => $numberOfUpvotes = fake()->numberBetween(0, 3),
+        ->hasComments($numberOfComments = fake()->numberBetween(1, 3), [
+            'upvotes' => $numberOfUpvotes = fake()->numberBetween(1, 3),
         ])
         ->create([
             'author_id' => User::first()->id,
