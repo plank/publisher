@@ -4,6 +4,7 @@ namespace Plank\Publisher\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Plank\BeforeAndAfterModelEvents\Concerns\BeforeAndAfterEvents;
 use Plank\Publisher\Builders\PublisherBuilder;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Contracts\PublishingStatus;
@@ -18,6 +19,7 @@ use Plank\Publisher\Scopes\PublisherScope;
  */
 trait IsPublishable
 {
+    use BeforeAndAfterEvents;
     use FiresPublishingEvents;
     use HasPublishableAttributes;
     use HasPublishableRelationships;
@@ -52,7 +54,7 @@ trait IsPublishable
     {
         static::addGlobalScope(new PublisherScope);
 
-        static::saving(function (Publishable&Model $model) {
+        $handleSave = static function (Publishable&Model $model) {
             if ($model->isBeingPublished()) {
                 if (! Publisher::canPublish($model)) {
                     return false;
@@ -80,7 +82,16 @@ trait IsPublishable
                 $model->fireUndrafting();
                 $model->fireAfterUndrafting();
             }
-        });
+        };
+
+        /**
+         * `creating` and `updating` get fired last AFTER the folowing events:
+         * - saving
+         * - soft deleting
+         * - restoring
+         */
+        static::afterEvent('creating', $handleSave);
+        static::afterEvent('updating', $handleSave);
 
         static::saved(function (Publishable&Model $model) {
             if ($model->wasPublished()) {
