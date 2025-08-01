@@ -84,7 +84,7 @@ trait SyncsPublishing
         return false;
     }
 
-    public function dependendsOnPublishable(): (Publishable&Model)|null
+    public function dependendsOnPublishable(): Publishable|Model|null
     {
         if ($this->dependendsOnPublishableRelation() === null) {
             return null;
