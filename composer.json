@@ -18,7 +18,7 @@
     "require": {
         "php": "^8.2",
         "illuminate/contracts": "^11",
-        "plank/before-and-after-model-events": "^1.0",
+        "plank/before-and-after-model-events": "^11.0",
         "plank/laravel-hush": "^11.1",
         "plank/laravel-model-resolver": "^11.1.2",
         "plank/laravel-schema-events": "^11.2",
