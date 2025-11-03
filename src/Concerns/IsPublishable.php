@@ -60,27 +60,19 @@ trait IsPublishable
                     return false;
                 }
 
-                $model->fireBeforePublishing();
                 $model->firePublishing();
-                $model->fireAfterPublishing();
             } elseif ($model->isBeingUnpublished()) {
                 if (! Publisher::canUnpublish($model)) {
                     return false;
                 }
 
-                $model->fireBeforeUnpublishing();
                 $model->fireUnpublishing();
-                $model->fireAfterUnpublishing();
             }
 
             if ($model->shouldBeDrafted()) {
-                $model->fireBeforeDrafting();
                 $model->fireDrafting();
-                $model->fireAfterDrafting();
             } else {
-                $model->fireBeforeUndrafting();
                 $model->fireUndrafting();
-                $model->fireAfterUndrafting();
             }
         };
 
@@ -95,23 +87,15 @@ trait IsPublishable
 
         static::saved(function (Publishable&Model $model) {
             if ($model->wasPublished()) {
-                $model->fireBeforePublished();
                 $model->firePublished();
-                $model->fireAfterPublished();
             } elseif ($model->wasUnpublished()) {
-                $model->fireBeforeUnpublished();
                 $model->fireUnpublished();
-                $model->fireAfterUnpublished();
             }
 
             if ($model->wasDrafted()) {
-                $model->fireBeforeDrafted();
                 $model->fireDrafted();
-                $model->fireAfterDrafted();
             } elseif ($model->wasUndrafted()) {
-                $model->fireBeforeUndrafted();
                 $model->fireUndrafted();
-                $model->fireAfterUndrafted();
             }
         });
     }
