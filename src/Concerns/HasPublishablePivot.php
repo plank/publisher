@@ -174,12 +174,8 @@ trait HasPublishablePivot
      */
     protected function isPublished(): bool
     {
-        $parent = $this->getParent();
-
-        if (! $parent instanceof Publishable) {
-            throw new PivotException('You cannot use Publishable relations on non-publishable models.');
-        }
-
-        return $parent->isPublished();
+        return ($parent = $this->getParent()) instanceof Publishable
+            ? $parent->isPublished()
+            : true;
     }
 }
