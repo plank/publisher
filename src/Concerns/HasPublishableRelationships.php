@@ -24,10 +24,22 @@ trait HasPublishableRelationships
 {
     public static function bootHasPublishableRelationships()
     {
-        static::publishing(function (Publishable&Model $model) {
-            $model->deleteQueuedPivots();
-            $model->publishAllPivots();
-        });
+        if (is_a(static::class, Publishable::class, true)) {
+            static::publishing(function (Publishable&Model $model) {
+                $model->deleteQueuedPivots();
+                $model->publishAllPivots();
+            });
+        } else {
+            static::creating(function (Model $model) {
+                $model->deleteQueuedPivots();
+                $model->publishAllPivots();
+            });
+
+            static::updating(function (Model $model) {
+                $model->deleteQueuedPivots();
+                $model->publishAllPivots();
+            });
+        }
     }
 
     /**
@@ -48,7 +60,7 @@ trait HasPublishableRelationships
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation
                     ->newPivotStatement()
-                    ->where($this->hasBeenPublishedColumn(), false)
+                    ->where(config()->get('publisher.columns.has_been_published'), false)
                     ->delete();
             });
 
@@ -56,9 +68,9 @@ trait HasPublishableRelationships
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation
                     ->newPivotStatement()
-                    ->where($this->hasBeenPublishedColumn(), false)
+                    ->where(config()->get('publisher.columns.has_been_published'), false)
                     ->update([
-                        $this->shouldDeleteColumn() => false,
+                        config()->get('publisher.columns.should_delete') => false,
                     ]);
             });
     }
@@ -69,7 +81,7 @@ trait HasPublishableRelationships
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation
                     ->newPivotStatement()
-                    ->where($this->shouldDeleteColumn(), true)
+                    ->where(config()->get('publisher.columns.should_delete'), true)
                     ->delete();
             });
     }
@@ -80,9 +92,9 @@ trait HasPublishableRelationships
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation
                     ->newPivotStatement()
-                    ->where($this->hasBeenPublishedColumn(), false)
+                    ->where(config()->get('publisher.columns.has_been_published'), false)
                     ->update([
-                        $this->hasBeenPublishedColumn() => true,
+                        config()->get('publisher.columns.has_been_published') => true,
                     ]);
             });
     }
