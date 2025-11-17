@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Exceptions\DraftException;
-use Plank\Publisher\Facades\Publisher;
 
 /**
  * @mixin FiresPublishingEvents
