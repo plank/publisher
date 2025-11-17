@@ -161,6 +161,19 @@ trait IsPublishable
         return $this->{$this->workflowColumn()} !== static::workflow()::published();
     }
 
+    public function shouldLoadFromDraft(): bool
+    {
+        return Publisher::draftContentAllowed()
+            && $this->publisherColumnsSelected()
+            && $this->isNotPublished();
+    }
+
+    public function publisherColumnsSelected(): bool
+    {
+        return $this->getRawOriginal($this->workflowColumn()) !== null
+            && $this->getRawOriginal($this->draftColumn()) !== null;
+    }
+
     public function isBeingPublished(): bool
     {
         return $this->isDirty($this->workflowColumn())

@@ -17,7 +17,7 @@ trait HasPublishableAttributes
     public static function bootHasPublishableAttributes()
     {
         static::retrieved(function (Publishable&Model $model) {
-            if (Publisher::draftContentAllowed() && $model->isNotPublished()) {
+            if ($model->shouldLoadFromDraft()) {
                 $column = $model->draftColumn();
 
                 if ($model->{$column} === null) {
