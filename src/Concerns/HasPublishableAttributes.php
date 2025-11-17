@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Exceptions\DraftException;
-use Plank\Publisher\Facades\Publisher;
 
 /**
  * @mixin FiresPublishingEvents
@@ -17,7 +16,7 @@ trait HasPublishableAttributes
     public static function bootHasPublishableAttributes()
     {
         static::retrieved(function (Publishable&Model $model) {
-            if (Publisher::draftContentAllowed() && $model->isNotPublished()) {
+            if ($model->shouldLoadFromDraft()) {
                 $column = $model->draftColumn();
 
                 if ($model->{$column} === null) {

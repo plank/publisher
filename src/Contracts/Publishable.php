@@ -46,6 +46,16 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function shouldBeDrafted(): bool;
 
     /**
+     * Determine if the model should have its attributes loaded from draft
+     */
+    public function shouldLoadFromDraft(): bool;
+
+    /**
+     * Determine if the model was hydrated with the publisher columns
+     */
+    public function publisherColumnsSelected(): bool;
+
+    /**
      * Calculate if the model is currently in a the published state
      */
     public function isPublished(): bool;
