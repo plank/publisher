@@ -170,8 +170,10 @@ trait IsPublishable
 
     public function publisherColumnsSelected(): bool
     {
-        return $this->getRawOriginal($this->workflowColumn()) !== null
-            && $this->getRawOriginal($this->draftColumn()) !== null;
+        $rawOriginal = $this->getRawOriginal();
+
+        return isset($rawOriginal[$this->workflowColumn()])
+            && isset($rawOriginal[$this->draftColumn()]);
     }
 
     public function isBeingPublished(): bool
