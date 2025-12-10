@@ -22,6 +22,8 @@ trait FiresPublishingEvents
             'undrafting',
             'drafted',
             'undrafted',
+            'reverting',
+            'reverted',
         ]);
     }
 
@@ -65,6 +67,16 @@ trait FiresPublishingEvents
         $this->fireModelEvent('undrafted');
     }
 
+    public function fireReverting(): void
+    {
+        $this->fireModelEvent('reverting');
+    }
+
+    public function fireReverted(): void
+    {
+        $this->fireModelEvent('reverted');
+    }
+
     public static function publishing(callable $callback): void
     {
         static::registerModelEvent('publishing', $callback);
@@ -103,5 +115,15 @@ trait FiresPublishingEvents
     public static function undrafted(callable $callback): void
     {
         static::registerModelEvent('undrafted', $callback);
+    }
+
+    public static function reverting(callable $callback): void
+    {
+        static::registerModelEvent('reverting', $callback);
+    }
+
+    public static function reverted(callable $callback): void
+    {
+        static::registerModelEvent('reverted', $callback);
     }
 }
