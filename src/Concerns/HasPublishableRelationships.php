@@ -68,7 +68,7 @@ trait HasPublishableRelationships
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation
                     ->newPivotStatement()
-                    ->where(config()->get('publisher.columns.has_been_published'), false)
+                    ->where(config()->get('publisher.columns.has_been_published'), true)
                     ->update([
                         config()->get('publisher.columns.should_delete') => false,
                     ]);
