@@ -111,7 +111,6 @@ trait IsPublishable
 
             Publisher::withoutDraftContent(fn () => $this->refresh());
 
-
             static::withoutHandlers(['publishing', 'published'], function () {
                 $this->revertPublishableRelations();
 
