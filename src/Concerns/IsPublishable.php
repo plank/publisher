@@ -107,6 +107,8 @@ trait IsPublishable
         }
 
         DB::transaction(function () {
+            $this->fireReverting();
+
             Publisher::withoutDraftContent(fn () => $this->refresh());
 
             $this->revertPublishableRelations();
@@ -115,6 +117,8 @@ trait IsPublishable
             $this->{$this->workflowColumn()} = static::workflow()::published();
             $this->{$this->shouldDeleteColumn()} = false;
             $this->save();
+
+            $this->fireReverted();
         });
     }
 

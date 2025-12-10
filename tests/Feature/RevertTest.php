@@ -471,3 +471,60 @@ describe('Revert persists changes correctly', function () {
         expect($post->status)->toBe(Status::PUBLISHED);
     });
 });
+
+describe('Revert events', function () {
+    it('fires reverting event before reverting', function () {
+        $post = Post::factory()->create([
+            'author_id' => User::first()->id,
+            'title' => 'Original Title',
+            'slug' => 'original-slug',
+            'body' => 'Original body.',
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $post->update(['status' => 'draft']);
+        $post->update(['title' => 'Updated Title']);
+
+        $revertingFired = false;
+        $titleDuringReverting = null;
+
+        Post::reverting(function (Post $model) use (&$revertingFired, &$titleDuringReverting) {
+            $revertingFired = true;
+            // At this point, the model still has draft content (before refresh)
+            $titleDuringReverting = $model->title;
+        });
+
+        $post->revert();
+
+        expect($revertingFired)->toBeTrue();
+        // The reverting event fires before the model is refreshed, so it still has the draft title
+        expect($titleDuringReverting)->toBe('Updated Title');
+    });
+
+    it('fires reverted event after reverting', function () {
+        $post = Post::factory()->create([
+            'author_id' => User::first()->id,
+            'title' => 'Original Title',
+            'slug' => 'original-slug',
+            'body' => 'Original body.',
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $post->update(['status' => 'draft']);
+        $post->update(['title' => 'Updated Title']);
+
+        $revertedFired = false;
+        $statusDuringReverted = null;
+
+        Post::reverted(function (Post $model) use (&$revertedFired, &$statusDuringReverted) {
+            $revertedFired = true;
+            $statusDuringReverted = $model->status;
+        });
+
+        $post->revert();
+
+        expect($revertedFired)->toBeTrue();
+        expect($statusDuringReverted)->toBe(Status::PUBLISHED);
+        expect($post->title)->toBe('Original Title');
+    });
+});
