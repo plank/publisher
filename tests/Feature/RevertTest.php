@@ -527,4 +527,33 @@ describe('Revert events', function () {
         expect($statusDuringReverted)->toBe(Status::PUBLISHED);
         expect($post->title)->toBe('Original Title');
     });
+
+    it('does not fire publishing or published events while reverting', function () {
+        $post = Post::factory()->create([
+            'author_id' => User::first()->id,
+            'title' => 'Original Title',
+            'slug' => 'original-slug',
+            'body' => 'Original body.',
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $post->update(['status' => 'draft']);
+        $post->update(['title' => 'Updated Title']);
+
+        $publishingFired = false;
+        $publishedFired = false;
+
+        Post::publishing(function (Post $model) use (&$publishingFired) {
+            $publishingFired = true;
+        });
+
+        Post::published(function (Post $model) use (&$publishedFired) {
+            $publishedFired = true;
+        });
+
+        $post->revert();
+
+        expect($publishingFired)->toBeFalse();
+        expect($publishedFired)->toBeFalse();
+    });
 });
