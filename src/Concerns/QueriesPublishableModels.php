@@ -5,6 +5,7 @@ namespace Plank\Publisher\Concerns;
 use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Contracts\PublisherQueries;
 use Plank\Publisher\Facades\Publisher;
@@ -48,6 +49,10 @@ trait QueriesPublishableModels
 
     public function where($column, $operator = null, $value = null, $boolean = 'and')
     {
+        if ($column instanceof Expression) {
+            return parent::where($column, $operator, $value, $boolean);
+        }
+
         if ($column instanceof Closure && is_null($operator)) {
             return parent::where($column, $operator, $value, $boolean);
         }
