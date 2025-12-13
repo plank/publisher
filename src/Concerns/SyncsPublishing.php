@@ -17,6 +17,8 @@ trait SyncsPublishing
 {
     use HushesHandlers;
 
+    protected static bool $extractingDependsOnPublishableFK = false;
+
     public static function bootSyncsPublishing()
     {
         static::drafting(function (Publishable&Model $model) {
@@ -104,8 +106,21 @@ trait SyncsPublishing
 
     public function dependsOnPublishableForeignKey(): ?string
     {
+        if (static::$extractingDependsOnPublishableFK) {
+            return null;
+        }
+
         if ($relation = $this->dependendsOnPublishableRelation()) {
-            $relation = $this->{$relation}();
+            // Newing up an instance of some relations like MorphTo will new
+            // up an instance of the model, which causes an infinite loop.
+            //
+            // To extract the FK, we add this check to prevent the loop.
+            try {
+                static::$extractingDependsOnPublishableFK = true;
+                $relation = $this->{$relation}();
+            } finally {
+                static::$extractingDependsOnPublishableFK = false;
+            }
         }
 
         if ($relation instanceof BelongsTo) {
