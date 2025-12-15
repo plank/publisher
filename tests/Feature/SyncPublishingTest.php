@@ -45,7 +45,29 @@ it('unpublishes all dependent content when its parent is unpublished', function 
     });
 });
 
-it('does not delete dependent content when its parent is in draft', function () {
+it('queues dependent content for delete when its parent has been published but is in draft', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $sections = Section::factory(3)->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    $section = $sections->first();
+    $section->delete();
+
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+    expect($post->sections()->count())->toBe(2);
+    expect($section->should_delete)->toBeTrue();
+});
+
+it('deletes dependent content when its parent has never been published', function () {
     $post = Post::factory()->create([
         'status' => Status::DRAFT,
     ]);
@@ -57,9 +79,9 @@ it('does not delete dependent content when its parent is in draft', function () 
 
     $section = $sections->first();
     $section->delete();
-    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(2);
     expect($post->sections()->count())->toBe(2);
-    expect($section->should_delete)->toBeTrue();
 });
 
 it('deletes dependent content when its parent is published', function () {
@@ -81,20 +103,26 @@ it('deletes dependent content when its parent is published', function () {
 
 it('deletes dependent content queued to be deleted when its parent is published', function () {
     $post = Post::factory()->create([
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
 
     $sections = Section::factory(3)->create([
         'post_id' => $post->id,
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
 
     $section = $sections->first();
     $section->delete();
+
     expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
     expect($post->sections()->count())->toBe(2);
     expect($section->should_delete)->toBeTrue();
 
+    // Re-publish the post
     $post->status = Status::PUBLISHED;
     $post->save();
 
@@ -104,13 +132,17 @@ it('deletes dependent content queued to be deleted when its parent is published'
 
 it('does not delete dependent content queued to be deleted when its parent is saved in a non-published state', function () {
     $post = Post::factory()->create([
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
 
     $sections = Section::factory(3)->create([
         'post_id' => $post->id,
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
 
     $section = $sections->first();
     $section->delete();
@@ -128,13 +160,17 @@ it('does not delete dependent content queued to be deleted when its parent is sa
 
 it('fires queuingForDelete event when dependent content is queued for deletion', function () {
     $post = Post::factory()->create([
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
 
     $section = Section::factory()->create([
         'post_id' => $post->id,
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
 
     $queuingForDeleteFired = false;
     $modelDuringEvent = null;
@@ -144,6 +180,7 @@ it('fires queuingForDelete event when dependent content is queued for deletion',
         $modelDuringEvent = $model;
     });
 
+    $section->refresh();
     $section->delete();
 
     expect($queuingForDeleteFired)->toBeTrue();
@@ -153,13 +190,17 @@ it('fires queuingForDelete event when dependent content is queued for deletion',
 
 it('fires queuedForDelete event after dependent content is queued for deletion', function () {
     $post = Post::factory()->create([
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
 
     $section = Section::factory()->create([
         'post_id' => $post->id,
-        'status' => Status::DRAFT,
+        'status' => Status::PUBLISHED,
     ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
 
     $queuedForDeleteFired = false;
     $shouldDeleteDuringEvent = null;
@@ -169,6 +210,7 @@ it('fires queuedForDelete event after dependent content is queued for deletion',
         $shouldDeleteDuringEvent = $model->should_delete;
     });
 
+    $section->refresh();
     $section->delete();
 
     expect($queuedForDeleteFired)->toBeTrue();
@@ -200,6 +242,34 @@ it('does not fire queuingForDelete or queuedForDelete events when parent is publ
 
     expect($queuingForDeleteFired)->toBeFalse();
     expect($queuedForDeleteFired)->toBeFalse();
+});
+
+it('does not fire queuingForDelete or queuedForDelete events when parent has never been published', function () {
+    $post = Post::factory()->create([
+        'status' => Status::DRAFT,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::DRAFT,
+    ]);
+
+    $queuingForDeleteFired = false;
+    $queuedForDeleteFired = false;
+
+    Section::queuingForDelete(function () use (&$queuingForDeleteFired) {
+        $queuingForDeleteFired = true;
+    });
+
+    Section::queuedForDelete(function () use (&$queuedForDeleteFired) {
+        $queuedForDeleteFired = true;
+    });
+
+    $section->delete();
+
+    expect($queuingForDeleteFired)->toBeFalse();
+    expect($queuedForDeleteFired)->toBeFalse();
+    expect(Section::withoutGlobalScopes()->find($section->id))->toBeNull();
 });
 
 it('restores dependent content queued for delete when parent is reverted', function () {
