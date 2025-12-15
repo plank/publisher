@@ -125,3 +125,79 @@ it('does not delete dependent content queued to be deleted when its parent is sa
     expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
     expect($post->sections()->count())->toBe(2);
 });
+
+it('fires queuingForDelete event when dependent content is queued for deletion', function () {
+    $post = Post::factory()->create([
+        'status' => Status::DRAFT,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::DRAFT,
+    ]);
+
+    $queuingForDeleteFired = false;
+    $modelDuringEvent = null;
+
+    Section::queuingForDelete(function (Section $model) use (&$queuingForDeleteFired, &$modelDuringEvent) {
+        $queuingForDeleteFired = true;
+        $modelDuringEvent = $model;
+    });
+
+    $section->delete();
+
+    expect($queuingForDeleteFired)->toBeTrue();
+    expect($modelDuringEvent)->toBe($section);
+    expect($section->should_delete)->toBeTrue();
+});
+
+it('fires queuedForDelete event after dependent content is queued for deletion', function () {
+    $post = Post::factory()->create([
+        'status' => Status::DRAFT,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::DRAFT,
+    ]);
+
+    $queuedForDeleteFired = false;
+    $shouldDeleteDuringEvent = null;
+
+    Section::queuedForDelete(function (Section $model) use (&$queuedForDeleteFired, &$shouldDeleteDuringEvent) {
+        $queuedForDeleteFired = true;
+        $shouldDeleteDuringEvent = $model->should_delete;
+    });
+
+    $section->delete();
+
+    expect($queuedForDeleteFired)->toBeTrue();
+    expect($shouldDeleteDuringEvent)->toBeTrue();
+});
+
+it('does not fire queuingForDelete or queuedForDelete events when parent is published', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $queuingForDeleteFired = false;
+    $queuedForDeleteFired = false;
+
+    Section::queuingForDelete(function () use (&$queuingForDeleteFired) {
+        $queuingForDeleteFired = true;
+    });
+
+    Section::queuedForDelete(function () use (&$queuedForDeleteFired) {
+        $queuedForDeleteFired = true;
+    });
+
+    $section->delete();
+
+    expect($queuingForDeleteFired)->toBeFalse();
+    expect($queuedForDeleteFired)->toBeFalse();
+});

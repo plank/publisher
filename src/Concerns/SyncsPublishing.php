@@ -61,7 +61,7 @@ trait SyncsPublishing
 
     public function syncPublishingFrom(Publishable&Model $from): void
     {
-        $this->setRelation($this->dependendsOnPublishableRelation(), $from);
+        $this->setRelation($this->dependsOnPublishableRelation(), $from);
 
         $this->{$this->workflowColumn()} = $from->{$this->workflowColumn()};
         $this->save();
@@ -73,32 +73,36 @@ trait SyncsPublishing
 
     public function queueForDelete(): ?bool
     {
-        $parent = $this->dependendsOnPublishable();
+        $parent = $this->dependsOnPublishable();
 
         if ($parent === null || $parent->isPublished()) {
             return null;
         }
 
+        $this->fireQueuingForDelete();
+
         $this->{$this->shouldDeleteColumn()} = true;
 
         $this->saveQuietly();
 
+        $this->fireQueuedForDelete();
+
         return false;
     }
 
-    public function dependendsOnPublishable(): (Publishable&Model)|null
+    public function dependsOnPublishable(): (Publishable&Model)|null
     {
-        if ($this->dependendsOnPublishableRelation() === null) {
+        if ($this->dependsOnPublishableRelation() === null) {
             return null;
         }
 
-        return $this->{$this->dependendsOnPublishableRelation()};
+        return $this->{$this->dependsOnPublishableRelation()};
     }
 
-    public function dependendsOnPublishableRelation(): ?string
+    public function dependsOnPublishableRelation(): ?string
     {
-        if (property_exists($this, 'dependendsOnPublishable')) {
-            return $this->dependendsOnPublishable;
+        if (property_exists($this, 'dependsOnPublishable')) {
+            return $this->dependsOnPublishable;
         }
 
         return null;
@@ -110,7 +114,7 @@ trait SyncsPublishing
             return null;
         }
 
-        if ($relation = $this->dependendsOnPublishableRelation()) {
+        if ($relation = $this->dependsOnPublishableRelation()) {
             // Newing up an instance of some relations like MorphTo will new
             // up an instance of the model, which causes an infinite loop.
             //
