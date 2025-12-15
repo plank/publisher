@@ -113,6 +113,7 @@ trait IsPublishable
 
             static::withoutHandlers(['publishing', 'published'], function () {
                 $this->revertPublishableRelations();
+                $this->revertPublishingDependents();
 
                 $this->{$this->draftColumn()} = null;
                 $this->{$this->workflowColumn()} = static::workflow()::published();
