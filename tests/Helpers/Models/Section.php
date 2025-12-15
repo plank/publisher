@@ -10,7 +10,7 @@ class Section extends TestModel implements Publishable
 {
     use IsPublishable;
 
-    public string $dependendsOnPublishable = 'post';
+    public string $dependsOnPublishable = 'post';
 
     public function post(): BelongsTo
     {

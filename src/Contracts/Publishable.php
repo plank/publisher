@@ -106,6 +106,11 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function syncPublishingToDependents(): void;
 
     /**
+     * Revert all publishing dependents that have been published before
+     */
+    public function revertPublishingDependents(): void;
+
+    /**
      * Sync the publishing state from another model
      */
     public function syncPublishingFrom(Publishable&Model $from): void;
@@ -202,12 +207,12 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     /**
      * Get the Model that this Model depends on for publishing/visibility
      */
-    public function dependendsOnPublishable(): (Publishable&Model)|null;
+    public function dependsOnPublishable(): (Publishable&Model)|null;
 
     /**
      * Get the Model that this Model depends on for publishing/visibility
      */
-    public function dependendsOnPublishableRelation(): ?string;
+    public function dependsOnPublishableRelation(): ?string;
 
     /**
      * Get the Model the foreign key that this Model depends on for

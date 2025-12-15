@@ -24,6 +24,8 @@ trait FiresPublishingEvents
             'undrafted',
             'reverting',
             'reverted',
+            'queuingForDelete',
+            'queuedForDelete',
         ]);
     }
 
@@ -77,6 +79,16 @@ trait FiresPublishingEvents
         $this->fireModelEvent('reverted');
     }
 
+    public function fireQueuingForDelete(): void
+    {
+        $this->fireModelEvent('queuingForDelete');
+    }
+
+    public function fireQueuedForDelete(): void
+    {
+        $this->fireModelEvent('queuedForDelete');
+    }
+
     public static function publishing(callable $callback): void
     {
         static::registerModelEvent('publishing', $callback);
@@ -125,5 +137,15 @@ trait FiresPublishingEvents
     public static function reverted(callable $callback): void
     {
         static::registerModelEvent('reverted', $callback);
+    }
+
+    public static function queuingForDelete(callable $callback): void
+    {
+        static::registerModelEvent('queuingForDelete', $callback);
+    }
+
+    public static function queuedForDelete(callable $callback): void
+    {
+        static::registerModelEvent('queuedForDelete', $callback);
     }
 }
