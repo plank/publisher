@@ -21,7 +21,7 @@ trait HasPublishablePivot
      */
     public function detach($ids = null, $touch = true)
     {
-        if ($this->isPublished() || !$this->hasEverBeenPublished()) {
+        if ($this->isPublished() || ! $this->hasEverBeenPublished()) {
             return parent::detach($ids, $touch);
         }
 
