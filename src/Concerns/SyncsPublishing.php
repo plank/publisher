@@ -94,7 +94,7 @@ trait SyncsPublishing
     {
         $parent = $this->dependsOnPublishable();
 
-        if ($parent === null || $parent->isPublished()) {
+        if ($parent === null || $parent->isPublished() || ! $parent->hasEverBeenPublished()) {
             return null;
         }
 
