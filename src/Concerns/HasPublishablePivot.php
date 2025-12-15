@@ -21,7 +21,7 @@ trait HasPublishablePivot
      */
     public function detach($ids = null, $touch = true)
     {
-        if ($this->isPublished()) {
+        if ($this->isPublished() || !$this->hasEverBeenPublished()) {
             return parent::detach($ids, $touch);
         }
 
@@ -176,6 +176,18 @@ trait HasPublishablePivot
     {
         return ($parent = $this->getParent()) instanceof Publishable
             ? $parent->isPublished()
+            : true;
+    }
+
+    /**
+     * Determine if the parent of the relationship is currently published
+     *
+     * @throws PivotException
+     */
+    protected function hasEverBeenPublished(): bool
+    {
+        return ($parent = $this->getParent()) instanceof Publishable
+            ? $parent->hasEverBeenPublished()
             : true;
     }
 }
