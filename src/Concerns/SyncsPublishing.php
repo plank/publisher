@@ -40,6 +40,25 @@ trait SyncsPublishing
             ->each(fn (Publishable&Model $model) => $model->syncPublishingFrom($this));
     }
 
+    public function revertPublishingDependents(): void
+    {
+        $this->getPublishingDependents()
+            ->filter(fn (Publishable&Model $model) => ! $model->hasEverBeenPublished())
+            ->each(fn (Publishable&Model $model) => $model->withoutHandler(
+                'deleting',
+                fn () => $model->delete(),
+                [SyncsPublishing::class]
+            ));
+
+        $this->getPublishingDependents()
+            ->filter(fn (Publishable&Model $model) => $model->hasEverBeenPublished())
+            ->each(function (Publishable&Model $model) {
+                $model->{$model->shouldDeleteColumn()} = false;
+                $model->saveQuietly();
+                $model->revert();
+            });
+    }
+
     /**
      * @return Collection<Publishable&Model>
      */

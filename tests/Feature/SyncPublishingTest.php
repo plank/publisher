@@ -201,3 +201,70 @@ it('does not fire queuingForDelete or queuedForDelete events when parent is publ
     expect($queuingForDeleteFired)->toBeFalse();
     expect($queuedForDeleteFired)->toBeFalse();
 });
+
+it('restores dependent content queued for delete when parent is reverted', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $sections = Section::factory(3)->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post (sections become draft)
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    // Queue a section for deletion
+    $section = $sections->first();
+    $section->delete();
+
+    expect($section->should_delete)->toBeTrue();
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+    expect($post->sections()->count())->toBe(2);
+
+    // Revert the post
+    $post->revert();
+
+    // The section should no longer be queued for delete
+    expect($section->fresh()->should_delete)->toBeFalse();
+    expect($section->fresh()->status)->toBe(Status::PUBLISHED);
+    expect($post->sections()->count())->toBe(3);
+});
+
+it('deletes dependent content that has never been published when parent is reverted', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $sections = Section::factory(2)->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    // Create a new section that has never been published
+    $newSection = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::DRAFT,
+    ]);
+
+    expect($newSection->has_been_published)->toBeFalse();
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(3);
+
+    // Revert the post
+    $post->revert();
+
+    // The original sections should be published
+    $sections->each(function ($section) {
+        expect($section->fresh()->status)->toBe(Status::PUBLISHED);
+    });
+
+    // The new section should be deleted (never been published)
+    expect($newSection->fresh())->toBeNull();
+    expect($post->sections()->withoutGlobalScopes()->count())->toBe(2);
+});
