@@ -98,13 +98,13 @@ trait SyncsPublishing
             return null;
         }
 
-        $this->fireQueuingForDelete();
+        $this->fireSuspending();
 
         $this->{$this->shouldDeleteColumn()} = true;
 
         $this->saveQuietly();
 
-        $this->fireQueuedForDelete();
+        $this->fireSuspended();
 
         return false;
     }

@@ -24,8 +24,20 @@ trait FiresPublishingEvents
             'undrafted',
             'reverting',
             'reverted',
-            'queuingForDelete',
-            'queuedForDelete',
+            'suspending',
+            'suspended',
+            'resuming',
+            'resumed',
+            'pivotDraftSyncing',
+            'pivotDraftSynced',
+            'pivotDraftAttaching',
+            'pivotDraftAttached',
+            'pivotDraftDetaching',
+            'pivotDraftDetached',
+            'pivotReattaching',
+            'pivotReattached',
+            'pivotDiscarding',
+            'pivotDiscarded',
         ]);
     }
 
@@ -79,14 +91,24 @@ trait FiresPublishingEvents
         $this->fireModelEvent('reverted');
     }
 
-    public function fireQueuingForDelete(): void
+    public function fireSuspending(): void
     {
-        $this->fireModelEvent('queuingForDelete');
+        $this->fireModelEvent('suspending');
     }
 
-    public function fireQueuedForDelete(): void
+    public function fireSuspended(): void
     {
-        $this->fireModelEvent('queuedForDelete');
+        $this->fireModelEvent('suspended');
+    }
+
+    public function fireResuming(): void
+    {
+        $this->fireModelEvent('resuming');
+    }
+
+    public function fireResumed(): void
+    {
+        $this->fireModelEvent('resumed');
     }
 
     public static function publishing(callable $callback): void
@@ -139,13 +161,73 @@ trait FiresPublishingEvents
         static::registerModelEvent('reverted', $callback);
     }
 
-    public static function queuingForDelete(callable $callback): void
+    public static function suspending(callable $callback): void
     {
-        static::registerModelEvent('queuingForDelete', $callback);
+        static::registerModelEvent('suspending', $callback);
     }
 
-    public static function queuedForDelete(callable $callback): void
+    public static function suspended(callable $callback): void
     {
-        static::registerModelEvent('queuedForDelete', $callback);
+        static::registerModelEvent('suspended', $callback);
+    }
+
+    public static function resuming(callable $callback): void
+    {
+        static::registerModelEvent('resuming', $callback);
+    }
+
+    public static function resumed(callable $callback): void
+    {
+        static::registerModelEvent('resumed', $callback);
+    }
+
+    public static function pivotDraftSyncing(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftSyncing', $callback);
+    }
+
+    public static function pivotDraftSynced(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftSynced', $callback);
+    }
+
+    public static function pivotDraftAttaching(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftAttaching', $callback);
+    }
+
+    public static function pivotDraftAttached(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftAttached', $callback);
+    }
+
+    public static function pivotDraftDetaching(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftDetaching', $callback);
+    }
+
+    public static function pivotDraftDetached(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftDetached', $callback);
+    }
+
+    public static function pivotReattaching(callable $callback): void
+    {
+        static::registerModelEvent('pivotReattaching', $callback);
+    }
+
+    public static function pivotReattached(callable $callback): void
+    {
+        static::registerModelEvent('pivotReattached', $callback);
+    }
+
+    public static function pivotDiscarding(callable $callback): void
+    {
+        static::registerModelEvent('pivotDiscarding', $callback);
+    }
+
+    public static function pivotDiscarded(callable $callback): void
+    {
+        static::registerModelEvent('pivotDiscarded', $callback);
     }
 }
