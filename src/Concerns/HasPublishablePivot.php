@@ -47,11 +47,22 @@ trait HasPublishablePivot
      */
     public function newExistingPivot(array $attributes = [])
     {
-        if (Publisher::draftContentAllowed()) {
+        // For standard pivots without custom class, merge draft in attributes
+        if (! $this->using && Publisher::draftContentAllowed()) {
             $attributes = $this->mergePivotDraftAttributes($attributes);
         }
 
-        return parent::newExistingPivot($attributes);
+        $pivot = parent::newExistingPivot($attributes);
+
+        // For custom pivot models with HasPublishablePivotAttributes, sync draft
+        // We do this after construction because the model's JSON cast handles decoding
+        if ($this->using &&
+            Publisher::draftContentAllowed() &&
+            method_exists($pivot, 'syncPivotAttributesFromDraft')) {
+            $pivot->syncPivotAttributesFromDraft();
+        }
+
+        return $pivot;
     }
 
     /**

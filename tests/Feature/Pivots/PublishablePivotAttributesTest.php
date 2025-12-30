@@ -264,3 +264,168 @@ describe('Publishable pivot attributes work with morph pivots', function () {
         });
     });
 });
+
+describe('Publishable pivot attributes work with custom pivot models', function () {
+    beforeEach(function () {
+        Publisher::allowDraftContent();
+    });
+
+    it('stores pivot attribute changes in draft column with custom pivot class', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        // Attach while published using the custom pivot relation
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+
+        // Now draft the parent
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        // Update the pivot
+        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+
+        // When draft content allowed, shows merged draft values
+        $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5);
+        expect($pivot->draft)->toBeArray();
+        expect($pivot->draft['order'])->toBe(5);
+
+        // Verify real column is unchanged when draft content restricted
+        Publisher::withoutDraftContent(function () use ($post) {
+            $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+            expect((int) $pivot->order)->toBe(1);
+        });
+    });
+
+    it('publishes draft pivot attributes with custom pivot class', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        // Attach while published
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+
+        // Draft and update
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
+
+        // Publish
+        $post->status = Status::PUBLISHED;
+        $post->save();
+
+        $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+
+        expect((int) $pivot->order)->toBe(10); // Real column now has the draft value
+        expect($pivot->draft)->toBeNull(); // Draft is cleared
+    });
+
+    it('reverts draft pivot attributes with custom pivot class', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        // Attach while published
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+
+        // Draft and update
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
+
+        // Revert
+        $post->revert();
+
+        $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+
+        expect((int) $pivot->order)->toBe(1); // Real column still has original value
+        expect($pivot->draft)->toBeNull(); // Draft is cleared
+    });
+
+    it('stores pivot attribute changes in draft column with custom morph pivot class', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $media = \Plank\Publisher\Tests\Helpers\Models\Media::factory()->create();
+
+        // Attach while published using the custom morph pivot relation
+        $post->customMedia()->attach([$media->getKey()], ['order' => 1]);
+
+        // Now draft the parent
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        // Update the pivot
+        $post->customMedia()->updateExistingPivot($media->getKey(), ['order' => 5]);
+
+        // When draft content allowed, shows merged draft values
+        $pivot = $post->customMedia()->withPivot(['order'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5);
+        expect($pivot->draft)->toBeArray();
+        expect($pivot->draft['order'])->toBe(5);
+
+        // Verify real column is unchanged when draft content restricted
+        Publisher::withoutDraftContent(function () use ($post) {
+            $pivot = $post->customMedia()->withPivot(['order'])->first()->pivot;
+            expect((int) $pivot->order)->toBe(1);
+        });
+    });
+
+    it('accumulates multiple draft updates with custom pivot class', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        // Attach while published
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1, 'paywall' => false]);
+
+        // Draft and update multiple times
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['paywall' => true]);
+
+        // When draft content allowed, shows merged draft values
+        $pivot = $post->customFeatured()->withPivot(['order', 'paywall'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5);
+        expect((bool) $pivot->paywall)->toBeTrue();
+
+        // Draft column contains the accumulated updates
+        expect($pivot->draft)->toBeArray();
+        expect($pivot->draft['order'])->toBe(5);
+        expect($pivot->draft['paywall'])->toBeTrue();
+
+        // Verify real columns are unchanged when draft content restricted
+        Publisher::withoutDraftContent(function () use ($post) {
+            $pivot = $post->customFeatured()->withPivot(['order', 'paywall'])->first()->pivot;
+            expect((int) $pivot->order)->toBe(1);
+            expect((bool) $pivot->paywall)->toBeFalse();
+        });
+    });
+});
