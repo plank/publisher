@@ -1,11 +1,11 @@
 <?php
 
-namespace Plank\Publisher\Tests\Helpers\Models\Pivot;
+namespace Plank\Publisher\Pivot;
 
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Plank\Publisher\Concerns\HasPublishablePivotAttributes;
 
-class CustomMorphPivot extends MorphPivot
+class PublishableMorphPivot extends MorphPivot
 {
     use HasPublishablePivotAttributes;
 }

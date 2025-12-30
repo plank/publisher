@@ -15,4 +15,8 @@ interface PublishablePivot
     public function publish($ids = null, $touch = true): bool|int;
 
     public function flush($ids = null, $touch = true): bool|int;
+
+    public function publishPivotAttributes($ids = null, $touch = true): int;
+
+    public function revertPivotAttributes($ids = null, $touch = true): int;
 }

@@ -34,6 +34,8 @@ trait FiresPublishingEvents
             'pivotDraftAttached',
             'pivotDraftDetaching',
             'pivotDraftDetached',
+            'pivotDraftUpdating',
+            'pivotDraftUpdated',
             'pivotReattaching',
             'pivotReattached',
             'pivotDiscarding',
@@ -209,6 +211,16 @@ trait FiresPublishingEvents
     public static function pivotDraftDetached(callable $callback): void
     {
         static::registerModelEvent('pivotDraftDetached', $callback);
+    }
+
+    public static function pivotDraftUpdating(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftUpdating', $callback);
+    }
+
+    public static function pivotDraftUpdated(callable $callback): void
+    {
+        static::registerModelEvent('pivotDraftUpdated', $callback);
     }
 
     public static function pivotReattaching(callable $callback): void

@@ -414,4 +414,449 @@ trait HasPublishablePivot
             ? $parent->hasEverBeenPublished()
             : true;
     }
+
+    /**
+     * Update an existing pivot record on the table.
+     *
+     * @param  mixed  $id
+     * @param  array  $attributes
+     * @param  bool  $touch
+     * @return int
+     */
+    public function updateExistingPivot($id, array $attributes, $touch = true)
+    {
+        if ($this->isPublished() || ! $this->hasEverBeenPublished()) {
+            return parent::updateExistingPivot($id, $attributes, $touch);
+        }
+
+        return $this->draftUpdateExistingPivot($id, $attributes, $touch);
+    }
+
+    /**
+     * Update an existing pivot record with draft attributes.
+     *
+     * @param  mixed  $id
+     * @param  array  $attributes
+     * @param  bool  $touch
+     * @return int
+     */
+    protected function draftUpdateExistingPivot($id, array $attributes, $touch = true)
+    {
+        [$idsOnly] = $this->getIdsWithAttributes([$id]);
+
+        if ($this->parent->firePivotEvent('pivotDraftUpdating', true, $this->getRelationName(), $idsOnly, $attributes) === false) {
+            return false;
+        }
+
+        $pivotDraftColumn = $this->pivotDraftColumn();
+
+        if ($this->using) {
+            $pivot = $this->getCurrentPivotForId($id);
+
+            if ($pivot) {
+                $draft = $pivot->{$pivotDraftColumn} ?? [];
+                $draft = array_merge($draft, $this->filterDraftableAttributes($attributes));
+                $pivot->{$pivotDraftColumn} = $draft;
+                $pivot->save();
+                $updated = 1;
+            } else {
+                $updated = 0;
+            }
+        } else {
+            $updated = $this->newPivotStatementForId($id)->update([
+                $pivotDraftColumn => json_encode(
+                    array_merge(
+                        $this->getCurrentDraftForId($id),
+                        $this->filterDraftableAttributes($attributes)
+                    )
+                ),
+            ]);
+        }
+
+        if ($touch) {
+            $this->touchIfTouching();
+        }
+
+        if ($this->parent->firePivotEvent('pivotDraftUpdated', false, $this->getRelationName(), $idsOnly, $attributes) === false) {
+            return false;
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Get the current pivot record for an ID.
+     *
+     * @param  mixed  $id
+     * @return \Illuminate\Database\Eloquent\Relations\Pivot|null
+     */
+    protected function getCurrentPivotForId($id)
+    {
+        $pivotData = parent::newPivotQuery()
+            ->where($this->relatedPivotKey, $id)
+            ->first();
+
+        if (! $pivotData) {
+            return null;
+        }
+
+        return $this->newPivot((array) $pivotData, true);
+    }
+
+    /**
+     * Get the current draft data for an ID.
+     *
+     * @param  mixed  $id
+     * @return array
+     */
+    protected function getCurrentDraftForId($id): array
+    {
+        $pivotDraftColumn = $this->pivotDraftColumn();
+
+        $result = parent::newPivotQuery()
+            ->where($this->relatedPivotKey, $id)
+            ->first([$pivotDraftColumn]);
+
+        if (! $result || ! $result->{$pivotDraftColumn}) {
+            return [];
+        }
+
+        return is_string($result->{$pivotDraftColumn})
+            ? json_decode($result->{$pivotDraftColumn}, true)
+            : (array) $result->{$pivotDraftColumn};
+    }
+
+    /**
+     * Filter attributes to only include those that can be stored in draft.
+     *
+     * @param  array  $attributes
+     * @return array
+     */
+    protected function filterDraftableAttributes(array $attributes): array
+    {
+        $excluded = [
+            'id',
+            $this->foreignPivotKey,
+            $this->relatedPivotKey,
+            $this->pivotDraftColumn(),
+            config()->get('publisher.columns.has_been_published'),
+            config()->get('publisher.columns.should_delete'),
+            $this->createdAt(),
+            $this->updatedAt(),
+        ];
+
+        return array_filter($attributes, fn ($key) => ! in_array($key, $excluded), ARRAY_FILTER_USE_KEY);
+    }
+
+    /**
+     * Publish all draft pivot attributes by moving them to real columns.
+     */
+    public function publishPivotAttributes($ids = null, $touch = true): int
+    {
+        $pivotDraftColumn = $this->pivotDraftColumn();
+
+        /** @var Query $query */
+        $query = parent::newPivotQuery()
+            ->whereNotNull($pivotDraftColumn)
+            ->when($ids, fn (Query $query) => $query->whereIn(
+                $this->getRelatedPivotKeyName(),
+                $ids,
+            ));
+
+        $pivots = $query->get();
+        $updated = 0;
+
+        foreach ($pivots as $pivot) {
+            $draft = is_string($pivot->{$pivotDraftColumn})
+                ? json_decode($pivot->{$pivotDraftColumn}, true)
+                : (array) $pivot->{$pivotDraftColumn};
+
+            if (empty($draft)) {
+                continue;
+            }
+
+            $updateData = array_merge($draft, [$pivotDraftColumn => null]);
+
+            parent::newPivotQuery()
+                ->where($this->relatedPivotKey, $pivot->{$this->relatedPivotKey})
+                ->update($updateData);
+
+            $updated++;
+        }
+
+        if ($touch && $updated > 0) {
+            $this->touchIfTouching();
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Revert all draft pivot attributes by clearing the draft column.
+     */
+    public function revertPivotAttributes($ids = null, $touch = true): int
+    {
+        $pivotDraftColumn = $this->pivotDraftColumn();
+
+        /** @var Query $query */
+        $query = parent::newPivotQuery()
+            ->whereNotNull($pivotDraftColumn)
+            ->when($ids, fn (Query $query) => $query->whereIn(
+                $this->getRelatedPivotKeyName(),
+                $ids,
+            ));
+
+        $updated = $query->update([$pivotDraftColumn => null]);
+
+        if ($touch && $updated > 0) {
+            $this->touchIfTouching();
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Get the name of the pivot draft column.
+     */
+    protected function pivotDraftColumn(): string
+    {
+        return config()->get('publisher.columns.draft', 'draft');
+    }
+
+    /**
+     * Determine if a column should use the pivot draft column for queries.
+     */
+    protected function shouldUsePivotDraftColumn(string $column): bool
+    {
+        $excluded = [
+            'id',
+            $this->foreignPivotKey,
+            $this->relatedPivotKey,
+            $this->pivotDraftColumn(),
+            config()->get('publisher.columns.has_been_published'),
+            config()->get('publisher.columns.should_delete'),
+            $this->createdAt(),
+            $this->updatedAt(),
+        ];
+
+        return Publisher::draftContentAllowed() && ! in_array($column, $excluded);
+    }
+
+    /**
+     * Add a "where pivot" clause to the query.
+     *
+     * @param  \Illuminate\Contracts\Database\Query\Expression|string  $column
+     * @param  mixed  $operator
+     * @param  mixed  $value
+     * @param  string  $boolean
+     * @return $this
+     */
+    public function wherePivot($column, $operator = null, $value = null, $boolean = 'and')
+    {
+        if (! is_string($column) || ! $this->shouldUsePivotDraftColumn($column)) {
+            return parent::wherePivot($column, $operator, $value, $boolean);
+        }
+
+        return $this->wherePivotWithDraft($column, $operator, $value, $boolean);
+    }
+
+    /**
+     * Add a "where pivot" clause that queries both real and draft columns.
+     */
+    protected function wherePivotWithDraft(string $column, $operator = null, $value = null, $boolean = 'and')
+    {
+        [$value, $operator] = $this->query->getQuery()->prepareValueAndOperator(
+            $value, $operator, func_num_args() === 2
+        );
+
+        $pivotTable = $this->getTable();
+        $draftColumn = $this->pivotDraftColumn();
+        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
+
+        return $this->where(function ($query) use ($pivotTable, $column, $operator, $value, $draftColumn, $hasBeenPublishedColumn) {
+            // Published pivot: query real column
+            $query->where(function ($q) use ($pivotTable, $column, $operator, $value, $hasBeenPublishedColumn) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
+                    ->where("{$pivotTable}.{$column}", $operator, $value);
+            })
+            // Unpublished pivot: query draft->column
+            ->orWhere(function ($q) use ($pivotTable, $column, $operator, $value, $draftColumn, $hasBeenPublishedColumn) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+                    ->where("{$pivotTable}.{$draftColumn}->{$column}", $operator, $value);
+            });
+        }, null, null, $boolean);
+    }
+
+    /**
+     * Add a "where pivot in" clause to the query.
+     *
+     * @param  string  $column
+     * @param  mixed  $values
+     * @param  string  $boolean
+     * @param  bool  $not
+     * @return $this
+     */
+    public function wherePivotIn($column, $values, $boolean = 'and', $not = false)
+    {
+        if (! $this->shouldUsePivotDraftColumn($column)) {
+            return parent::wherePivotIn($column, $values, $boolean, $not);
+        }
+
+        $pivotTable = $this->getTable();
+        $draftColumn = $this->pivotDraftColumn();
+        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
+
+        $method = $not ? 'whereNotIn' : 'whereIn';
+
+        return $this->where(function ($query) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
+            $query->where(function ($q) use ($pivotTable, $column, $values, $hasBeenPublishedColumn, $method) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
+                    ->{$method}("{$pivotTable}.{$column}", $values);
+            })
+            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+                    ->{$method}("{$pivotTable}.{$draftColumn}->{$column}", $values);
+            });
+        }, null, null, $boolean);
+    }
+
+    /**
+     * Add a "where pivot not in" clause to the query.
+     *
+     * @param  string  $column
+     * @param  mixed  $values
+     * @param  string  $boolean
+     * @return $this
+     */
+    public function wherePivotNotIn($column, $values, $boolean = 'and')
+    {
+        return $this->wherePivotIn($column, $values, $boolean, true);
+    }
+
+    /**
+     * Add a "where pivot null" clause to the query.
+     *
+     * @param  string  $column
+     * @param  string  $boolean
+     * @param  bool  $not
+     * @return $this
+     */
+    public function wherePivotNull($column, $boolean = 'and', $not = false)
+    {
+        if (! $this->shouldUsePivotDraftColumn($column)) {
+            return parent::wherePivotNull($column, $boolean, $not);
+        }
+
+        $pivotTable = $this->getTable();
+        $draftColumn = $this->pivotDraftColumn();
+        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
+
+        $method = $not ? 'whereNotNull' : 'whereNull';
+
+        return $this->where(function ($query) use ($pivotTable, $column, $draftColumn, $hasBeenPublishedColumn, $method) {
+            $query->where(function ($q) use ($pivotTable, $column, $hasBeenPublishedColumn, $method) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
+                    ->{$method}("{$pivotTable}.{$column}");
+            })
+            ->orWhere(function ($q) use ($pivotTable, $column, $draftColumn, $hasBeenPublishedColumn, $method) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+                    ->{$method}("{$pivotTable}.{$draftColumn}->{$column}");
+            });
+        }, null, null, $boolean);
+    }
+
+    /**
+     * Add a "where pivot not null" clause to the query.
+     *
+     * @param  string  $column
+     * @param  string  $boolean
+     * @return $this
+     */
+    public function wherePivotNotNull($column, $boolean = 'and')
+    {
+        return $this->wherePivotNull($column, $boolean, true);
+    }
+
+    /**
+     * Add a "where pivot between" clause to the query.
+     *
+     * @param  string  $column
+     * @param  array  $values
+     * @param  string  $boolean
+     * @param  bool  $not
+     * @return $this
+     */
+    public function wherePivotBetween($column, array $values, $boolean = 'and', $not = false)
+    {
+        if (! $this->shouldUsePivotDraftColumn($column)) {
+            return parent::wherePivotBetween($column, $values, $boolean, $not);
+        }
+
+        $pivotTable = $this->getTable();
+        $draftColumn = $this->pivotDraftColumn();
+        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
+
+        $method = $not ? 'whereNotBetween' : 'whereBetween';
+
+        return $this->where(function ($query) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
+            $query->where(function ($q) use ($pivotTable, $column, $values, $hasBeenPublishedColumn, $method) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
+                    ->{$method}("{$pivotTable}.{$column}", $values);
+            })
+            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
+                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+                    ->{$method}("{$pivotTable}.{$draftColumn}->{$column}", $values);
+            });
+        }, null, null, $boolean);
+    }
+
+    /**
+     * Add a "where pivot not between" clause to the query.
+     *
+     * @param  string  $column
+     * @param  array  $values
+     * @param  string  $boolean
+     * @return $this
+     */
+    public function wherePivotNotBetween($column, array $values, $boolean = 'and')
+    {
+        return $this->wherePivotBetween($column, $values, $boolean, true);
+    }
+
+    /**
+     * Add an "or where pivot" clause to the query.
+     *
+     * @param  \Illuminate\Contracts\Database\Query\Expression|string  $column
+     * @param  mixed  $operator
+     * @param  mixed  $value
+     * @return $this
+     */
+    public function orWherePivot($column, $operator = null, $value = null)
+    {
+        return $this->wherePivot($column, $operator, $value, 'or');
+    }
+
+    /**
+     * Add an "or where pivot in" clause to the query.
+     *
+     * @param  string  $column
+     * @param  mixed  $values
+     * @return $this
+     */
+    public function orWherePivotIn($column, $values)
+    {
+        return $this->wherePivotIn($column, $values, 'or');
+    }
+
+    /**
+     * Add an "or where pivot not in" clause to the query.
+     *
+     * @param  string  $column
+     * @param  mixed  $values
+     * @return $this
+     */
+    public function orWherePivotNotIn($column, $values)
+    {
+        return $this->wherePivotNotIn($column, $values, 'or');
+    }
 }

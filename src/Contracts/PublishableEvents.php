@@ -108,6 +108,16 @@ interface PublishableEvents
     public static function pivotDraftDetached(callable $callback): void;
 
     /**
+     * Register a callback to run when the model has a pivot record updating while in draft
+     */
+    public static function pivotDraftUpdating(callable $callback): void;
+
+    /**
+     * Register a callback to run when the model has a pivot record updated while in draft
+     */
+    public static function pivotDraftUpdated(callable $callback): void;
+
+    /**
      * Register a callback to run when the model has a pivotted relation reattaching while in draft
      */
     public static function pivotReattaching(callable $callback): void;

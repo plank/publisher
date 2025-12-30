@@ -30,6 +30,7 @@ trait HasPublishableRelationships
         static::published(function (Publishable&Model $model) {
             $model->deleteQueuedPivots();
             $model->publishAllPivots();
+            $model->publishAllPivotAttributes();
         });
     }
 
@@ -56,6 +57,11 @@ trait HasPublishableRelationships
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation->reattach();
             });
+
+        $this->publishablePivots()
+            ->each(function (Relation&PublishablePivot $relation) {
+                $relation->revertPivotAttributes();
+            });
     }
 
     public function deleteQueuedPivots(): void
@@ -71,6 +77,14 @@ trait HasPublishableRelationships
         $this->publishablePivots()
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation->publish();
+            });
+    }
+
+    public function publishAllPivotAttributes(): void
+    {
+        $this->publishablePivots()
+            ->each(function (Relation&PublishablePivot $relation) {
+                $relation->publishPivotAttributes();
             });
     }
 
