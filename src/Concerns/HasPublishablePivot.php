@@ -20,6 +20,67 @@ trait HasPublishablePivot
         FiresPivotEventsTrait::detach as pivotEventsDetach;
     }
 
+    /**
+     * Get the pivot columns for the relation including the draft column.
+     *
+     * @return array
+     */
+    protected function aliasedPivotColumns()
+    {
+        $columns = parent::aliasedPivotColumns();
+
+        $draftColumn = $this->pivotDraftColumn();
+        $qualifiedDraft = $this->qualifyPivotColumn($draftColumn).' as pivot_'.$draftColumn;
+
+        if (! in_array($qualifiedDraft, $columns)) {
+            $columns[] = $qualifiedDraft;
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Create a new existing pivot model instance.
+     *
+     * @param  array  $attributes
+     * @return \Illuminate\Database\Eloquent\Relations\Pivot
+     */
+    public function newExistingPivot(array $attributes = [])
+    {
+        if (Publisher::draftContentAllowed()) {
+            $attributes = $this->mergePivotDraftAttributes($attributes);
+        }
+
+        return parent::newExistingPivot($attributes);
+    }
+
+    /**
+     * Merge draft values into pivot attributes.
+     *
+     * @param  array  $attributes
+     * @return array
+     */
+    protected function mergePivotDraftAttributes(array $attributes): array
+    {
+        $draftColumn = $this->pivotDraftColumn();
+
+        if (empty($attributes[$draftColumn])) {
+            return $attributes;
+        }
+
+        $draft = is_string($attributes[$draftColumn])
+            ? json_decode($attributes[$draftColumn], true)
+            : $attributes[$draftColumn];
+
+        if (is_array($draft)) {
+            // Merge draft values into attributes and decode the draft column
+            $attributes = array_merge($attributes, $draft);
+            $attributes[$draftColumn] = $draft;
+        }
+
+        return $attributes;
+    }
+
     public function sync($ids, $detaching = true)
     {
         if ($this->isPublished() || ! $this->hasEverBeenPublished()) {

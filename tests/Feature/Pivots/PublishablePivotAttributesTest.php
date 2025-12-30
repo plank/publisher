@@ -15,29 +15,31 @@ describe('Publishable pivot attributes can be stored in draft state', function (
             'status' => Status::PUBLISHED,
         ]);
 
-        $featured = Post::factory()->create();
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
 
         // Attach while published
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
 
         // Now draft the parent
         $post->status = Status::DRAFT;
         $post->save();
 
         // Update the pivot
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
 
-        // Check that the draft column has the changes
-        $pivot = $post->customFeatured()->withPivot([
-            'id',
-            'order',
-            'draft',
-            'has_been_published',
-        ])->first()->pivot;
-
-        expect((int) $pivot->order)->toBe(1); // Real column should still be 1
+        // When draft content is allowed, the pivot shows merged draft values
+        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5); // Shows draft value when draft content allowed
         expect($pivot->draft)->toBeArray();
-        expect($pivot->draft['order'])->toBe(5); // Draft should have the new value
+        expect($pivot->draft['order'])->toBe(5);
+
+        // Verify real column is unchanged by querying with draft content restricted
+        Publisher::withoutDraftContent(function () use ($post) {
+            $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
+            expect((int) $pivot->order)->toBe(1); // Shows real column value
+        });
     });
 
     it('updates real columns directly when parent has never been published', function () {
@@ -48,15 +50,10 @@ describe('Publishable pivot attributes can be stored in draft state', function (
 
         $featured = Post::factory()->create();
 
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
 
-        $pivot = $post->customFeatured()->withPivot([
-            'id',
-            'order',
-            'draft',
-            'has_been_published',
-        ])->first()->pivot;
+        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
 
         expect((int) $pivot->order)->toBe(5); // Real column should be updated
         expect($pivot->draft)->toBeNull(); // No draft
@@ -70,15 +67,10 @@ describe('Publishable pivot attributes can be stored in draft state', function (
 
         $featured = Post::factory()->create();
 
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
 
-        $pivot = $post->customFeatured()->withPivot([
-            'id',
-            'order',
-            'draft',
-            'has_been_published',
-        ])->first()->pivot;
+        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
 
         expect((int) $pivot->order)->toBe(5); // Real column should be updated
         expect($pivot->draft)->toBeNull(); // No draft
@@ -93,24 +85,19 @@ describe('Publishable pivot attributes can be stored in draft state', function (
         $featured = Post::factory()->create();
 
         // Attach while published
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
 
         // Draft and update
         $post->status = Status::DRAFT;
         $post->save();
 
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
 
         // Publish
         $post->status = Status::PUBLISHED;
         $post->save();
 
-        $pivot = $post->customFeatured()->withPivot([
-            'id',
-            'order',
-            'draft',
-            'has_been_published',
-        ])->first()->pivot;
+        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
 
         expect((int) $pivot->order)->toBe(10); // Real column now has the draft value
         expect($pivot->draft)->toBeNull(); // Draft is cleared
@@ -125,29 +112,24 @@ describe('Publishable pivot attributes can be stored in draft state', function (
         $featured = Post::factory()->create();
 
         // Attach while published
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
 
         // Draft and update
         $post->status = Status::DRAFT;
         $post->save();
 
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
 
         // Revert
         $post->revert();
 
-        $pivot = $post->customFeatured()->withPivot([
-            'id',
-            'order',
-            'draft',
-            'has_been_published',
-        ])->first()->pivot;
+        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
 
         expect((int) $pivot->order)->toBe(1); // Real column still has original value
         expect($pivot->draft)->toBeNull(); // Draft is cleared
     });
 
-    it('loads draft pivot values when accessing pivot on draft parent with draft content allowed', function () {
+    it('loads draft pivot values automatically when accessing pivot on draft parent with draft content allowed', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::PUBLISHED,
@@ -156,24 +138,25 @@ describe('Publishable pivot attributes can be stored in draft state', function (
         $featured = Post::factory()->create();
 
         // Attach while published
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
 
         // Draft and update
         $post->status = Status::DRAFT;
         $post->save();
 
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 10]);
 
         // Reload the post and check the pivot value
         $post = Post::find($post->id);
 
         Publisher::allowDraftContent();
 
-        $pivot = $post->customFeatured()->withPivot(['order', 'draft'])->first()->pivot;
+        // The draft column is auto-included, but order needs withPivot
+        // The draft values are merged, so order comes from draft
+        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
 
-        // The pivot model should load the draft value
-        expect($pivot->draft)->toBeArray();
-        expect($pivot->draft['order'])->toBe(10);
+        // The pivot should automatically have draft values merged
+        expect((int) $pivot->order)->toBe(10);
     });
 
     it('accumulates multiple draft updates', function () {
@@ -182,33 +165,36 @@ describe('Publishable pivot attributes can be stored in draft state', function (
             'status' => Status::PUBLISHED,
         ]);
 
-        $featured = Post::factory()->create();
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
 
         // Attach while published
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1, 'paywall' => false]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1, 'paywall' => false]);
 
         // Draft and update multiple times
         $post->status = Status::DRAFT;
         $post->save();
 
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['paywall' => true]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['paywall' => true]);
 
-        $pivot = $post->customFeatured()->withPivot([
-            'id',
-            'order',
-            'paywall',
-            'draft',
-        ])->first()->pivot;
+        // When draft content allowed, shows merged draft values
+        $pivot = $post->featured()->withPivot(['order', 'paywall'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5);
+        expect((bool) $pivot->paywall)->toBeTrue();
 
-        // Real columns should be unchanged
-        expect((int) $pivot->order)->toBe(1);
-        expect((bool) $pivot->paywall)->toBeFalse();
-
-        // Draft should have both updates
+        // Draft column contains the accumulated updates
         expect($pivot->draft)->toBeArray();
         expect($pivot->draft['order'])->toBe(5);
         expect($pivot->draft['paywall'])->toBeTrue();
+
+        // Verify real columns are unchanged when draft content restricted
+        Publisher::withoutDraftContent(function () use ($post) {
+            $pivot = $post->featured()->withPivot(['order', 'paywall'])->first()->pivot;
+            expect((int) $pivot->order)->toBe(1);
+            expect((bool) $pivot->paywall)->toBeFalse();
+        });
     });
 
     it('fires pivotDraftUpdating and pivotDraftUpdated events', function () {
@@ -230,12 +216,12 @@ describe('Publishable pivot attributes can be stored in draft state', function (
 
         $featured = Post::factory()->create();
 
-        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+        $post->featured()->attach([$featured->getKey()], ['order' => 1]);
 
         $post->status = Status::DRAFT;
         $post->save();
 
-        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+        $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
 
         expect($updatingFired)->toBeTrue();
         expect($updatedFired)->toBeTrue();
@@ -256,25 +242,25 @@ describe('Publishable pivot attributes work with morph pivots', function () {
         $media = \Plank\Publisher\Tests\Helpers\Models\Media::factory()->create();
 
         // Attach while published
-        $post->customMedia()->attach([$media->getKey()], ['order' => 1]);
+        $post->media()->attach([$media->getKey()], ['order' => 1]);
 
         // Now draft the parent
         $post->status = Status::DRAFT;
         $post->save();
 
         // Update the pivot
-        $post->customMedia()->updateExistingPivot($media->getKey(), ['order' => 5]);
+        $post->media()->updateExistingPivot($media->getKey(), ['order' => 5]);
 
-        // Check that the draft column has the changes
-        $pivot = $post->customMedia()->withPivot([
-            'id',
-            'order',
-            'draft',
-            'has_been_published',
-        ])->first()->pivot;
-
-        expect((int) $pivot->order)->toBe(1); // Real column should still be 1
+        // When draft content allowed, shows merged draft values
+        $pivot = $post->media()->withPivot(['order'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5);
         expect($pivot->draft)->toBeArray();
-        expect($pivot->draft['order'])->toBe(5); // Draft should have the new value
+        expect($pivot->draft['order'])->toBe(5);
+
+        // Verify real column is unchanged when draft content restricted
+        Publisher::withoutDraftContent(function () use ($post) {
+            $pivot = $post->media()->withPivot(['order'])->first()->pivot;
+            expect((int) $pivot->order)->toBe(1);
+        });
     });
 });
