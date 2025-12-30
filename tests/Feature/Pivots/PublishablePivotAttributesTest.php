@@ -429,3 +429,95 @@ describe('Publishable pivot attributes work with custom pivot models', function 
         });
     });
 });
+
+describe('HasPublishablePivotAttributes trait methods', function () {
+    it('shouldLoadPivotFromDraft returns false when draft content is restricted', function () {
+        Publisher::allowDraftContent();
+
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while published
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+
+        // Draft and update to create draft content
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $post->customFeatured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
+
+        // Verify draft was stored
+        Publisher::allowDraftContent();
+        $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5);
+
+        // Now restrict draft content and reload - need withoutGlobalScopes to access draft parent
+        Publisher::restrictDraftContent();
+        $post = Post::withoutGlobalScopes()->find($post->id);
+        $pivot = $post->customFeatured()->withoutGlobalScopes()->withPivot(['order'])->first()->pivot;
+
+        // shouldLoadPivotFromDraft returns false, so real column value is shown
+        expect((int) $pivot->order)->toBe(1);
+    });
+
+    it('hasDraftPivotAttributes returns false when draft column is empty', function () {
+        Publisher::allowDraftContent();
+
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::DRAFT,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach without ever being published - no draft column populated
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+
+        $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+
+        // Draft is null/empty, so hasDraftPivotAttributes returns false
+        expect($pivot->draft)->toBeNull();
+        expect((int) $pivot->order)->toBe(1);
+    });
+
+    it('syncPivotAttributesFromDraft handles empty draft gracefully', function () {
+        Publisher::allowDraftContent();
+
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while published - no draft content
+        $post->customFeatured()->attach([$featured->getKey()], ['order' => 1]);
+
+        $pivot = $post->customFeatured()->withPivot(['order'])->first()->pivot;
+
+        // No draft, so syncPivotAttributesFromDraft does nothing
+        expect($pivot->draft)->toBeNull();
+        expect((int) $pivot->order)->toBe(1);
+    });
+
+    it('pivotDraftColumn returns configured column name', function () {
+        Publisher::allowDraftContent();
+
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+        $post->customFeatured()->attach([$featured->getKey()]);
+
+        $pivot = $post->customFeatured()->first()->pivot;
+
+        // The default draft column is 'draft'
+        expect($pivot->pivotDraftColumn())->toBe('draft');
+    });
+});

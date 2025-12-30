@@ -3,6 +3,7 @@
 build
 composer.lock
 coverage
+coverage-report
 docs
 phpunit.xml
 phpstan.neon
