@@ -338,3 +338,221 @@ it('deletes dependent content that has never been published when parent is rever
     expect($newSection->fresh())->toBeNull();
     expect($post->sections()->withoutGlobalScopes()->count())->toBe(2);
 });
+
+it('can suspend a dependent model directly', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    $section->refresh();
+
+    expect($section->isSuspended())->toBeFalse();
+
+    $section->suspend();
+
+    expect($section->isSuspended())->toBeTrue();
+    expect($section->should_delete)->toBeTrue();
+});
+
+it('fires suspending and suspended events when calling suspend()', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    $suspendingFired = false;
+    $suspendedFired = false;
+
+    Section::suspending(function () use (&$suspendingFired) {
+        $suspendingFired = true;
+    });
+
+    Section::suspended(function () use (&$suspendedFired) {
+        $suspendedFired = true;
+    });
+
+    $section->refresh();
+    $section->suspend();
+
+    expect($suspendingFired)->toBeTrue();
+    expect($suspendedFired)->toBeTrue();
+});
+
+it('can resume a suspended dependent model directly', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    $section->refresh();
+    $section->suspend();
+
+    expect($section->isSuspended())->toBeTrue();
+
+    $section->resume();
+
+    expect($section->isSuspended())->toBeFalse();
+    expect($section->should_delete)->toBeFalse();
+});
+
+it('fires resuming and resumed events when calling resume()', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    $section->refresh();
+    $section->suspend();
+
+    $resumingFired = false;
+    $resumedFired = false;
+
+    Section::resuming(function () use (&$resumingFired) {
+        $resumingFired = true;
+    });
+
+    Section::resumed(function () use (&$resumedFired) {
+        $resumedFired = true;
+    });
+
+    $section->resume();
+
+    expect($resumingFired)->toBeTrue();
+    expect($resumedFired)->toBeTrue();
+});
+
+it('fires resuming and resumed events when parent is reverted and dependent was suspended', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    // Queue section for deletion
+    $section->refresh();
+    $section->delete();
+
+    expect($section->isSuspended())->toBeTrue();
+
+    $resumingFired = false;
+    $resumedFired = false;
+
+    Section::resuming(function () use (&$resumingFired) {
+        $resumingFired = true;
+    });
+
+    Section::resumed(function () use (&$resumedFired) {
+        $resumedFired = true;
+    });
+
+    // Revert the post - should resume the section
+    $post->revert();
+
+    expect($resumingFired)->toBeTrue();
+    expect($resumedFired)->toBeTrue();
+    expect($section->fresh()->isSuspended())->toBeFalse();
+});
+
+it('does not fire resuming or resumed events when parent is reverted and dependent was not suspended', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    $section->refresh();
+
+    expect($section->isSuspended())->toBeFalse();
+
+    $resumingFired = false;
+    $resumedFired = false;
+
+    Section::resuming(function () use (&$resumingFired) {
+        $resumingFired = true;
+    });
+
+    Section::resumed(function () use (&$resumedFired) {
+        $resumedFired = true;
+    });
+
+    // Revert the post - should NOT fire resuming/resumed since section wasn't suspended
+    $post->revert();
+
+    expect($resumingFired)->toBeFalse();
+    expect($resumedFired)->toBeFalse();
+});
+
+it('deletes suspended dependent when parent is published', function () {
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $section = Section::factory()->create([
+        'post_id' => $post->id,
+        'status' => Status::PUBLISHED,
+    ]);
+
+    // Unpublish the post
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    // Suspend the section directly
+    $section->refresh();
+    $section->suspend();
+
+    expect($section->isSuspended())->toBeTrue();
+    expect(Section::withoutGlobalScopes()->find($section->id))->not->toBeNull();
+
+    // Re-publish the post - suspended section should be deleted
+    $post->status = Status::PUBLISHED;
+    $post->save();
+
+    expect(Section::withoutGlobalScopes()->find($section->id))->toBeNull();
+});
