@@ -726,7 +726,11 @@ trait HasPublishablePivot
     public function wherePivot($column, $operator = null, $value = null, $boolean = 'and')
     {
         if (! is_string($column) || ! $this->shouldUsePivotDraftColumn($column)) {
-            return parent::wherePivot($column, $operator, $value, $boolean);
+            // Wrap in withoutDraftContent to prevent QueriesPublishableModels from adding
+            // draft-aware logic to pivot queries, which would cause ambiguous column references.
+            return Publisher::withoutDraftContent(
+                fn () => parent::wherePivot($column, $operator, $value, $boolean)
+            );
         }
 
         return $this->wherePivotWithDraft($column, $operator, $value, $boolean);
@@ -734,6 +738,10 @@ trait HasPublishablePivot
 
     /**
      * Add a "where pivot" clause that queries both real and draft columns.
+     *
+     * When draft content is allowed, we query the "effective" value:
+     * - If the draft column has a value for the field, use it
+     * - Otherwise, fall back to the real column
      */
     protected function wherePivotWithDraft(string $column, $operator = null, $value = null, $boolean = 'and')
     {
@@ -743,20 +751,22 @@ trait HasPublishablePivot
 
         $pivotTable = $this->getTable();
         $draftColumn = $this->pivotDraftColumn();
-        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
 
-        return $this->where(function ($query) use ($pivotTable, $column, $operator, $value, $draftColumn, $hasBeenPublishedColumn) {
-            // Published pivot: query real column
-            $query->where(function ($q) use ($pivotTable, $column, $operator, $value, $hasBeenPublishedColumn) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
-                    ->where("{$pivotTable}.{$column}", $operator, $value);
-            })
-            // Unpublished pivot: query draft->column
-            ->orWhere(function ($q) use ($pivotTable, $column, $operator, $value, $draftColumn, $hasBeenPublishedColumn) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+        // Wrap in withoutDraftContent to prevent QueriesPublishableModels from adding
+        // draft-aware logic to these internal pivot queries, which would cause
+        // ambiguous column references when both parent and pivot have a 'draft' column.
+        return Publisher::withoutDraftContent(fn () => $this->where(function ($query) use ($pivotTable, $column, $operator, $value, $draftColumn) {
+            // Draft column has the value and it matches
+            $query->where(function ($q) use ($pivotTable, $column, $operator, $value, $draftColumn) {
+                $q->whereNotNull("{$pivotTable}.{$draftColumn}->{$column}")
                     ->where("{$pivotTable}.{$draftColumn}->{$column}", $operator, $value);
+            })
+            // OR draft column doesn't have the value and real column matches
+            ->orWhere(function ($q) use ($pivotTable, $column, $operator, $value, $draftColumn) {
+                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                    ->where("{$pivotTable}.{$column}", $operator, $value);
             });
-        }, null, null, $boolean);
+        }, null, null, $boolean));
     }
 
     /**
@@ -771,25 +781,30 @@ trait HasPublishablePivot
     public function wherePivotIn($column, $values, $boolean = 'and', $not = false)
     {
         if (! $this->shouldUsePivotDraftColumn($column)) {
-            return parent::wherePivotIn($column, $values, $boolean, $not);
+            return Publisher::withoutDraftContent(
+                fn () => parent::wherePivotIn($column, $values, $boolean, $not)
+            );
         }
 
         $pivotTable = $this->getTable();
         $draftColumn = $this->pivotDraftColumn();
-        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
 
         $method = $not ? 'whereNotIn' : 'whereIn';
 
-        return $this->where(function ($query) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
-            $query->where(function ($q) use ($pivotTable, $column, $values, $hasBeenPublishedColumn, $method) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
-                    ->{$method}("{$pivotTable}.{$column}", $values);
-            })
-            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+        // Wrap in withoutDraftContent to prevent QueriesPublishableModels from adding
+        // draft-aware logic to these internal pivot queries.
+        return Publisher::withoutDraftContent(fn () => $this->where(function ($query) use ($pivotTable, $column, $values, $draftColumn, $method) {
+            // Draft column has the value and it matches
+            $query->where(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
+                $q->whereNotNull("{$pivotTable}.{$draftColumn}->{$column}")
                     ->{$method}("{$pivotTable}.{$draftColumn}->{$column}", $values);
+            })
+            // OR draft column doesn't have the value and real column matches
+            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
+                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                    ->{$method}("{$pivotTable}.{$column}", $values);
             });
-        }, null, null, $boolean);
+        }, null, null, $boolean));
     }
 
     /**
@@ -816,25 +831,30 @@ trait HasPublishablePivot
     public function wherePivotNull($column, $boolean = 'and', $not = false)
     {
         if (! $this->shouldUsePivotDraftColumn($column)) {
-            return parent::wherePivotNull($column, $boolean, $not);
+            return Publisher::withoutDraftContent(
+                fn () => parent::wherePivotNull($column, $boolean, $not)
+            );
         }
 
         $pivotTable = $this->getTable();
         $draftColumn = $this->pivotDraftColumn();
-        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
 
         $method = $not ? 'whereNotNull' : 'whereNull';
 
-        return $this->where(function ($query) use ($pivotTable, $column, $draftColumn, $hasBeenPublishedColumn, $method) {
-            $query->where(function ($q) use ($pivotTable, $column, $hasBeenPublishedColumn, $method) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
-                    ->{$method}("{$pivotTable}.{$column}");
-            })
-            ->orWhere(function ($q) use ($pivotTable, $column, $draftColumn, $hasBeenPublishedColumn, $method) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+        // Wrap in withoutDraftContent to prevent QueriesPublishableModels from adding
+        // draft-aware logic to these internal pivot queries.
+        return Publisher::withoutDraftContent(fn () => $this->where(function ($query) use ($pivotTable, $column, $draftColumn, $method) {
+            // Draft column has the field - check if it's null/not null
+            $query->where(function ($q) use ($pivotTable, $column, $draftColumn, $method) {
+                $q->whereNotNull("{$pivotTable}.{$draftColumn}->{$column}")
                     ->{$method}("{$pivotTable}.{$draftColumn}->{$column}");
+            })
+            // OR draft column doesn't have the field - check real column
+            ->orWhere(function ($q) use ($pivotTable, $column, $draftColumn, $method) {
+                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                    ->{$method}("{$pivotTable}.{$column}");
             });
-        }, null, null, $boolean);
+        }, null, null, $boolean));
     }
 
     /**
@@ -861,25 +881,30 @@ trait HasPublishablePivot
     public function wherePivotBetween($column, array $values, $boolean = 'and', $not = false)
     {
         if (! $this->shouldUsePivotDraftColumn($column)) {
-            return parent::wherePivotBetween($column, $values, $boolean, $not);
+            return Publisher::withoutDraftContent(
+                fn () => parent::wherePivotBetween($column, $values, $boolean, $not)
+            );
         }
 
         $pivotTable = $this->getTable();
         $draftColumn = $this->pivotDraftColumn();
-        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
 
         $method = $not ? 'whereNotBetween' : 'whereBetween';
 
-        return $this->where(function ($query) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
-            $query->where(function ($q) use ($pivotTable, $column, $values, $hasBeenPublishedColumn, $method) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", true)
-                    ->{$method}("{$pivotTable}.{$column}", $values);
-            })
-            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $hasBeenPublishedColumn, $method) {
-                $q->where("{$pivotTable}.{$hasBeenPublishedColumn}", false)
+        // Wrap in withoutDraftContent to prevent QueriesPublishableModels from adding
+        // draft-aware logic to these internal pivot queries.
+        return Publisher::withoutDraftContent(fn () => $this->where(function ($query) use ($pivotTable, $column, $values, $draftColumn, $method) {
+            // Draft column has the value and it matches
+            $query->where(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
+                $q->whereNotNull("{$pivotTable}.{$draftColumn}->{$column}")
                     ->{$method}("{$pivotTable}.{$draftColumn}->{$column}", $values);
+            })
+            // OR draft column doesn't have the value and real column matches
+            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
+                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                    ->{$method}("{$pivotTable}.{$column}", $values);
             });
-        }, null, null, $boolean);
+        }, null, null, $boolean));
     }
 
     /**
