@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('media_id')->constrained();
             $table->morphs('mediable');
             $table->string('collection')->default('default');
+            $table->integer('order')->nullable();
+            $table->json('draft')->nullable();
             $table->boolean('has_been_published');
             $table->boolean('should_delete');
             $table->timestamps();

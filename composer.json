@@ -22,15 +22,16 @@
         "plank/laravel-hush": "^11.1",
         "plank/laravel-model-resolver": "^11.1.2",
         "plank/laravel-schema-events": "^11.2",
+        "plank/laravel-pivot-events": "^1.0",
         "spatie/laravel-package-tools": "^1.14.0"
     },
     "require-dev": {
         "laravel/pint": "^1.0",
         "nunomaduro/collision": "^8.1.1",
         "orchestra/testbench": "^9.5.0",
-        "pestphp/pest": "^2.20",
-        "pestphp/pest-plugin-arch": "^2.5",
-        "pestphp/pest-plugin-laravel": "^2.0"
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-arch": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0"
     },
     "autoload": {
         "psr-4": {
