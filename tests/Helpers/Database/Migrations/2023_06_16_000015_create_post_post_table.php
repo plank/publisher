@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('post_id')->constrained();
             $table->foreignId('featured_id')->constrained('posts', 'id');
             $table->boolean('paywall')->default(false);
+            $table->integer('order')->nullable();
+            $table->json('draft')->nullable();
             $table->boolean('has_been_published');
             $table->boolean('should_delete');
             $table->timestamps();
