@@ -4,11 +4,11 @@ use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 
-describe('Publishable pivot query methods with draft content allowed', function () {
-    beforeEach(function () {
-        Publisher::allowDraftContent();
-    });
+beforeEach(function () {
+    Publisher::allowDraftContent();
+});
 
+describe('Publishable pivot query methods with draft content allowed', function () {
     describe('wherePivot queries', function () {
         it('queries published pivot columns directly for published pivots', function () {
             $post = Post::factory()->create(['status' => Status::PUBLISHED]);
@@ -350,11 +350,9 @@ describe('Publishable pivot query methods with draft content allowed', function 
 });
 
 describe('Publishable pivot query methods with draft content restricted', function () {
-    beforeEach(function () {
-        Publisher::restrictDraftContent();
-    });
-
     it('queries pivot columns directly when draft content is restricted', function () {
+        Publisher::restrictDraftContent();
+
         $post = Post::factory()->create(['status' => Status::PUBLISHED]);
         // Featured posts must also be published to be visible when draft content is restricted
         $featured1 = Post::factory()->create(['status' => Status::PUBLISHED]);
