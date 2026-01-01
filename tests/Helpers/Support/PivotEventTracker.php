@@ -13,7 +13,7 @@ class PivotEventTracker
 
     public static function make(): self
     {
-        return new self();
+        return new self;
     }
 
     public function __construct()
