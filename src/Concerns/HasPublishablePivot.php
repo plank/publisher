@@ -42,7 +42,6 @@ trait HasPublishablePivot
     /**
      * Create a new existing pivot model instance.
      *
-     * @param  array  $attributes
      * @return \Illuminate\Database\Eloquent\Relations\Pivot
      */
     public function newExistingPivot(array $attributes = [])
@@ -67,9 +66,6 @@ trait HasPublishablePivot
 
     /**
      * Merge draft values into pivot attributes.
-     *
-     * @param  array  $attributes
-     * @return array
      */
     protected function mergePivotDraftAttributes(array $attributes): array
     {
@@ -125,7 +121,6 @@ trait HasPublishablePivot
      * Attach a model to the parent.
      *
      * @param  mixed  $id
-     * @param  array  $attributes
      * @param  bool  $touch
      * @return void
      */
@@ -272,8 +267,8 @@ trait HasPublishablePivot
             ));
 
         $ids = $pivotQuery->get($this->getRelatedPivotKeyName())
-                ->pluck($this->getRelatedPivotKeyName())
-                ->toArray();
+            ->pluck($this->getRelatedPivotKeyName())
+            ->toArray();
 
         [$idsOnly, $idsAttributes] = $this->getIdsWithAttributes($ids);
 
@@ -491,7 +486,6 @@ trait HasPublishablePivot
      * Update an existing pivot record on the table.
      *
      * @param  mixed  $id
-     * @param  array  $attributes
      * @param  bool  $touch
      * @return int
      */
@@ -508,7 +502,6 @@ trait HasPublishablePivot
      * Update an existing pivot record with draft attributes.
      *
      * @param  mixed  $id
-     * @param  array  $attributes
      * @param  bool  $touch
      * @return int
      */
@@ -579,7 +572,6 @@ trait HasPublishablePivot
      * Get the current draft data for an ID.
      *
      * @param  mixed  $id
-     * @return array
      */
     protected function getCurrentDraftForId($id): array
     {
@@ -600,9 +592,6 @@ trait HasPublishablePivot
 
     /**
      * Filter attributes to only include those that can be stored in draft.
-     *
-     * @param  array  $attributes
-     * @return array
      */
     protected function filterDraftableAttributes(array $attributes): array
     {
@@ -762,10 +751,10 @@ trait HasPublishablePivot
                     ->where("{$pivotTable}.{$draftColumn}->{$column}", $operator, $value);
             })
             // OR draft column doesn't have the value and real column matches
-            ->orWhere(function ($q) use ($pivotTable, $column, $operator, $value, $draftColumn) {
-                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
-                    ->where("{$pivotTable}.{$column}", $operator, $value);
-            });
+                ->orWhere(function ($q) use ($pivotTable, $column, $operator, $value, $draftColumn) {
+                    $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                        ->where("{$pivotTable}.{$column}", $operator, $value);
+                });
         }, null, null, $boolean));
     }
 
@@ -800,10 +789,10 @@ trait HasPublishablePivot
                     ->{$method}("{$pivotTable}.{$draftColumn}->{$column}", $values);
             })
             // OR draft column doesn't have the value and real column matches
-            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
-                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
-                    ->{$method}("{$pivotTable}.{$column}", $values);
-            });
+                ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
+                    $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                        ->{$method}("{$pivotTable}.{$column}", $values);
+                });
         }, null, null, $boolean));
     }
 
@@ -850,10 +839,10 @@ trait HasPublishablePivot
                     ->{$method}("{$pivotTable}.{$draftColumn}->{$column}");
             })
             // OR draft column doesn't have the field - check real column
-            ->orWhere(function ($q) use ($pivotTable, $column, $draftColumn, $method) {
-                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
-                    ->{$method}("{$pivotTable}.{$column}");
-            });
+                ->orWhere(function ($q) use ($pivotTable, $column, $draftColumn, $method) {
+                    $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                        ->{$method}("{$pivotTable}.{$column}");
+                });
         }, null, null, $boolean));
     }
 
@@ -873,7 +862,6 @@ trait HasPublishablePivot
      * Add a "where pivot between" clause to the query.
      *
      * @param  string  $column
-     * @param  array  $values
      * @param  string  $boolean
      * @param  bool  $not
      * @return $this
@@ -900,10 +888,10 @@ trait HasPublishablePivot
                     ->{$method}("{$pivotTable}.{$draftColumn}->{$column}", $values);
             })
             // OR draft column doesn't have the value and real column matches
-            ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
-                $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
-                    ->{$method}("{$pivotTable}.{$column}", $values);
-            });
+                ->orWhere(function ($q) use ($pivotTable, $column, $values, $draftColumn, $method) {
+                    $q->whereNull("{$pivotTable}.{$draftColumn}->{$column}")
+                        ->{$method}("{$pivotTable}.{$column}", $values);
+                });
         }, null, null, $boolean));
     }
 
@@ -911,7 +899,6 @@ trait HasPublishablePivot
      * Add a "where pivot not between" clause to the query.
      *
      * @param  string  $column
-     * @param  array  $values
      * @param  string  $boolean
      * @return $this
      */
