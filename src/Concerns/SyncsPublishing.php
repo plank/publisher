@@ -30,7 +30,15 @@ trait SyncsPublishing
         });
 
         static::deleting(function (Publishable&Model $model) {
-            return $model->queueForDelete();
+            $parent = $model->dependsOnPublishable();
+
+            if ($parent === null || $parent->isPublished() || ! $parent->hasEverBeenPublished()) {
+                return null;
+            }
+
+            $model->suspend();
+
+            return false;
         });
     }
 
@@ -53,8 +61,10 @@ trait SyncsPublishing
         $this->getPublishingDependents()
             ->filter(fn (Publishable&Model $model) => $model->hasEverBeenPublished())
             ->each(function (Publishable&Model $model) {
-                $model->{$model->shouldDeleteColumn()} = false;
-                $model->saveQuietly();
+                if ($model->isSuspended()) {
+                    $model->resume();
+                }
+
                 $model->revert();
             });
     }
@@ -85,28 +95,47 @@ trait SyncsPublishing
         $this->{$this->workflowColumn()} = $from->{$this->workflowColumn()};
         $this->save();
 
-        if ($from->isPublished() && $this->{$this->shouldDeleteColumn()}) {
+        if ($from->isPublished() && $this->isSuspended()) {
             $this->withoutHandler('deleting', fn () => $this->delete(), [SyncsPublishing::class]);
         }
     }
 
-    public function queueForDelete(): ?bool
+    /**
+     * Suspend the model by marking it for deletion.
+     *
+     * When the parent is published, the model will be deleted.
+     */
+    public function suspend(): void
     {
-        $parent = $this->dependsOnPublishable();
-
-        if ($parent === null || $parent->isPublished() || ! $parent->hasEverBeenPublished()) {
-            return null;
-        }
-
-        $this->fireQueuingForDelete();
+        $this->fireSuspending();
 
         $this->{$this->shouldDeleteColumn()} = true;
 
         $this->saveQuietly();
 
-        $this->fireQueuedForDelete();
+        $this->fireSuspended();
+    }
 
-        return false;
+    /**
+     * Resume the model by clearing the should_delete flag.
+     */
+    public function resume(): void
+    {
+        $this->fireResuming();
+
+        $this->{$this->shouldDeleteColumn()} = false;
+
+        $this->saveQuietly();
+
+        $this->fireResumed();
+    }
+
+    /**
+     * Determine if the model is suspended (queued for deletion).
+     */
+    public function isSuspended(): bool
+    {
+        return (bool) $this->{$this->shouldDeleteColumn()};
     }
 
     public function dependsOnPublishable(): Publishable|Model|null

@@ -200,9 +200,21 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function publishAllPivots(): void;
 
     /**
-     * Queue the model for deletion if it's owner is not published
+     * Suspend the model by marking it for deletion.
+     *
+     * When the parent is published, the model will be deleted.
      */
-    public function queueForDelete(): ?bool;
+    public function suspend(): void;
+
+    /**
+     * Resume the model by clearing the should_delete flag.
+     */
+    public function resume(): void;
+
+    /**
+     * Determine if the model is suspended (queued for deletion).
+     */
+    public function isSuspended(): bool;
 
     /**
      * Get the Model that this Model depends on for publishing/visibility

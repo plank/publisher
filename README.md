@@ -2,132 +2,86 @@
 
 <p align="center">
 <a href="https://packagist.org/packages/plank/publisher"><img src="https://img.shields.io/packagist/php-v/plank/publisher?color=%23fae370&label=php&logo=php&logoColor=%23fff" alt="PHP Version Support"></a>
-<a href="https://laravel.com/docs/11.x/releases#support-policy"><img src="https://img.shields.io/badge/laravel-10.x,%2011.x-%2343d399?color=%23f1ede9&logo=laravel&logoColor=%23ffffff" alt="PHP Version Support"></a>
+<a href="https://laravel.com/docs/12.x/releases#support-policy"><img src="https://img.shields.io/badge/laravel-12.x-%2343d399?color=%23f1ede9&logo=laravel&logoColor=%23ffffff" alt="Laravel Version Support"></a>
 <a href="https://github.com/plank/publisher/actions?query=workflow%3Arun-tests"><img src="https://img.shields.io/github/actions/workflow/status/plank/publisher/run-tests.yml?branch=main&&color=%23bfc9bd&label=run-tests&logo=github&logoColor=%23fff" alt="GitHub Workflow Status"></a>
 </p>
 
 # Laravel Publisher
 
-:warning: Package is under active development. Wait for v1.0.0 for production use. :warning:
-
-Publisher is a package aimed at providing a simple and flexible way to manage the publishing workflow of content in a Laravel application. It is designed to be used with any type of content, such as blog posts, pages, or any other type of content that may require a publishing workflow.
-
-A key requirement Publisher aims to solve, is the ability to work on existing content without the changes being visible to your site's regular users until the changes are ready to be published, without the existing published version going missing from your site.
-
-In Version 2+, Publisher will also provide the ability to manage relationships to content that is in a draft state without that related draft content being visible to your site's regular users.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Configuration](#configuration)
-  - [Migration Columns](#migration-columns)
-  - [Middleware](#middleware)
-  - [URL Rewriting](#url-rewriting)
-  - [Admin Panel](#admin-panel)
-  - [Gates & Abilities](#gates--abilities)
-- [Contributing](#contributing)
-- [Credits](#credits)
-- [License](#license)
-- [Security Vulnerabilities](#security-vulnerabilities)
-
-&nbsp;
+Publisher is a Laravel package that provides a complete content publishing workflow, allowing you to maintain both published and draft versions of your content simultaneously. Editors can work on changes without affecting the live published version until changes are explicitly published.
 
 ## Installation
 
-1. You can install the package via composer:
+1. Install the package via composer:
 
     ```bash
     composer require plank/publisher
     ```
 
-2. Add the `Plank\Publisher\Concerns\IsPublishable` trait and the `Plank\Publisher\Contracts\Publishable` interface to the models you want to respect the publishing workflow.
+2. Add the `Publishable` interface and `IsPublishable` trait to your models:
 
-3. Use the package's install command to complete the installation:
+    ```php
+    <?php
+
+    namespace App\Models;
+
+    use Illuminate\Database\Eloquent\Model;
+    use Plank\Publisher\Concerns\IsPublishable;
+    use Plank\Publisher\Contracts\Publishable;
+
+    class Post extends Model implements Publishable
+    {
+        use IsPublishable;
+    }
+    ```
+
+3. Run the install command:
 
     ```bash
     php artisan publisher:install
     ```
 
-&nbsp;
+4. Add the publisher columns to your model if you did not generate them automatically:
 
-## Configuration
+    ```php
+    <?php
 
-The package's configuration file is located at `config/publisher.php`. If you did not publish the config file during installation, you can publish the configuration file using the following command:
+    use Illuminate\Database\Migrations\Migration;
+    use Illuminate\Database\Schema\Blueprint;
+    use Illuminate\Support\Facades\Schema;
 
-```bash
-php artisan vendor:publish --provider="Plank\Publisher\PublisherServiceProvider" --tag="config"
-```
+    return new class extends SnapshotMigration
+    {
+        public function up()
+        {
+            Schema::table('posts', function (Blueprint $table) {
+                $table->string('status');
+                $table->boolean('has_been_published');
+                $table->boolean('should_delete');
+                $table->json('draft')->nullable();
+            });
+        }
+    }
+    ```
 
-### Migration Columns
+5. Run migrations:
 
-Each Publishable Model requires 3 columns on their table to function properly:
+    ```bash
+    php artisan migrate
+    ```
 
-1. `workflow`
-   - The workflow columns stores the current state of the model. Whether is is currently published, or being worked on as a draft.
-2. `draft`
-   - The draft column stores the working values of the attributes in a json column
-3. `has_been_published`
-   - The has_been_published column stores a boolean value to indicate if the model has ever been published.
+## Documentation
 
-As a further note, you could in theory extend the values of the `workflow` column to include more states, such as "in_review". However, there are two important states that are required for the package to function properly: a "published" state, and an "unpublished" state. These states are configurable in the `IsPublishable` trait, by overriding the `publishedState` and `unpublishedState` methods.
+For complete documentation including configuration, features, and advanced usage, see the [Documentation](docs/README.md).
 
-Whenever a model is transitioned to the "published" state, the `has_been_published` column is set to `true`, and the model is considered to have been published.
+**Quick Links:**
 
-Whenever a model is transitioned out of the "published" state, changes to the model's attributes will be persisted to the `draft` column, and the `workflow` column will be set to the "unpublished" state.
-
-&nbsp;
-
-### Middleware
-
-The package provides a route middleware that can toggle the visiblity of draft content in the application. This is useful for allowing specific users to preview draft content in a production environment.
-
-If you want to use the package's middleware globally, you should place it in your `\App\Http\Kernel` just before `\Illuminate\Routing\Middleware\SubstituteBindings::class`.
-
-&nbsp;
-
-### URL Rewriting
-
-This package provides an opt-out feature which overrides all URL generation done by the frameworks methods like `url()` and `route()` to preserve the current visiblity of the draft content.
-
-You can disable the feature by setting the `urls.rewrite` key to `false` in the configuration file.
-
-You can also configure the GET query parameter used to signify the site should display draft content by setting the `urls.previewKey` key to the desired value.
-
-When the value configured in `previewKey` is present in the GET query, AND the user has the `Gate` ability to `view-draft-content`, the package will allow draft content and rewrite all urls to include the `previewKey`.
+-   [Installation Guide](docs/guides/installation.md)
+-   [Core Concepts](docs/guides/core-concepts.md)
+-   [Publishable Relationships](docs/features/publishable-relationships.md)
+-   [Admin Panel Integration](docs/advanced/admin-panel-integration.md)
 
 &nbsp;
-
-### Draft Paths
-
-You can specify [request path patterns](https://laravel.com/api/10.x/Illuminate/Http/Request.html#method_is) for endpoints you wish to force draft content to be enabled on. This is especially important for your Admin Panel and CMS routes, as you will want to be working with unpublished content during the editing/creation process.
-
-By default, this package defaults to the Plank's standard for using Laravel Nova with `admin/*`, `nova-api/*` and `nova-vendor/*` defined.
-
-&nbsp;
-
-### Gates & Abilities
-
-All gates defined on the package can be overriden in your app by defining the gate with the same name in an Application Service Provider.
-
-The package implementation of all gates is as follows:
-
-```php
-Gate::define('publish', function ($user, $model) {
-    return $user !== null;
-});
-```
-
-#### publish
-
-This gate is used to determine if a user has the ability to publish a model. By default, the gate is defined as follows:
-
-#### unpublish
-
-This gate is used to determine if a user has the ability to unpublish a model. By default, the gate is defined as follows:
-
-#### view-draft-content
-
-This gate is used to determine if a user has the ability to view draft content. By default, the gate is defined as follows:
 
 ## Contributing
 
@@ -137,9 +91,9 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## Credits
 
-- [Kurt Friars](https://github.com/kfriars)
-- [Massimo Triassi](https://github.com/m-triassi)
-- [All Contributors](../../contributors)
+-   [Kurt Friars](https://github.com/kfriars)
+-   [Massimo Triassi](https://github.com/m-triassi)
+-   [All Contributors](../../contributors)
 
 &nbsp;
 
@@ -151,7 +105,7 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 ## Security Vulnerabilities
 
-If you discover a security vulnerability within siren, please send an e-mail to [security@plank.co](mailto:security@plank.co). All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within Publisher, please send an e-mail to [security@plank.co](mailto:security@plank.co). All security vulnerabilities will be promptly addressed.
 
 &nbsp;
 
