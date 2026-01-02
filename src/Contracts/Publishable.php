@@ -111,6 +111,11 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function revertPublishingDependents(): void;
 
     /**
+     * Handle suspending the model automatically
+     */
+    public function handleAutomaticSuspension(): ?bool;
+
+    /**
      * Sync the publishing state from another model
      */
     public function syncPublishingFrom(Publishable&Model $from): void;

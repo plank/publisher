@@ -30,15 +30,7 @@ trait SyncsPublishing
         });
 
         static::deleting(function (Publishable&Model $model) {
-            $parent = $model->dependsOnPublishable();
-
-            if ($parent === null || $parent->isPublished() || ! $parent->hasEverBeenPublished()) {
-                return null;
-            }
-
-            $model->suspend();
-
-            return false;
+            return $model->handleAutomaticSuspension();
         });
     }
 
@@ -67,6 +59,19 @@ trait SyncsPublishing
 
                 $model->revert();
             });
+    }
+
+    public function handleAutomaticSuspension(): ?bool
+    {
+        $parent = $this->dependsOnPublishable();
+
+        if ($parent === null || $parent->isPublished() || ! $parent->hasEverBeenPublished()) {
+            return null;
+        }
+
+        $this->suspend();
+
+        return false;
     }
 
     /**
