@@ -27,11 +27,13 @@ trait HasPublishableRelationships
 
     public static function bootHasPublishableRelationships()
     {
-        static::published(function (Publishable&Model $model) {
-            $model->deleteQueuedPivots();
-            $model->publishAllPivots();
-            $model->publishAllPivotAttributes();
-        });
+        if (is_a(static::class, Publishable::class, true)) {
+            static::published(function (Publishable&Model $model) {
+                $model->deleteQueuedPivots();
+                $model->publishAllPivots();
+                $model->publishAllPivotAttributes();
+            });
+        }
     }
 
     /**
