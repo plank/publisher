@@ -571,4 +571,22 @@ describe('Publishable MorphToMany relationships can be managed via publishing st
         expect((bool) $pivot->has_been_published)->toBeTrue();
         expect((bool) $pivot->should_delete)->toBeFalse();
     });
+
+    it('does not apply draft logic to the morph type column constraint', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::DRAFT,
+        ]);
+
+        $media = Media::factory()->create();
+        $post->media()->attach([$media->getKey()]);
+
+        // Get the SQL query for the relationship
+        $sql = $post->media()->toRawSql();
+
+        // The morph type constraint should be a simple equality check,
+        // not wrapped in draft logic (which would include json_extract or status checks)
+        expect($sql)->toContain('"mediable_type" = ')
+            ->not->toMatch('/\(.*mediable_type.*status.*\)|json_extract.*mediable_type/i');
+    });
 });
