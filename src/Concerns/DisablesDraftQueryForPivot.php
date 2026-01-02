@@ -19,12 +19,20 @@ trait DisablesDraftQueryForPivot
          * model – while draft content is allowed – you don't want the draft
          * queries to be applied to the pivot table constraints.
          */
-        Publisher::withoutDraftContent(function () {
-            $this->query->where(
-                $this->getQualifiedForeignPivotKeyName(), '=', $this->parent->{$this->parentKey}
-            );
-        });
+        return Publisher::withoutDraftContent(fn () => parent::addWhereConstraints());
+    }
 
-        return $this;
+    /**
+     * Set the join clause for the relation query.
+     *
+     * The "child" method is for supporting older Laravel versions that call
+     * `performJoin($query)`, while newer versions call `addJoinClause($query)`.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return $this
+     */
+    protected function performJoin($query = null)
+    {
+        return Publisher::withoutDraftContent(fn () => parent::performJoin($query));
     }
 }

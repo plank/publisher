@@ -423,9 +423,7 @@ trait HasPublishablePivot
         $allowingDraftContent = Publisher::draftContentAllowed();
 
         Publisher::withoutDraftContent(function () use ($allowingDraftContent) {
-            $this->query->where(
-                $this->getQualifiedForeignPivotKeyName(), '=', $this->parent->{$this->parentKey}
-            );
+            parent::addWhereConstraints();
 
             if ($allowingDraftContent) {
                 $this->query->where(
@@ -942,5 +940,19 @@ trait HasPublishablePivot
     public function orWherePivotNotIn($column, $values)
     {
         return $this->wherePivotNotIn($column, $values, 'or');
+    }
+
+    /**
+     * Set the join clause for the relation query.
+     *
+     * Wraps the parent implementation in withoutDraftContent to prevent
+     * draft-aware query logic from being applied to the morph type constraint.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return $this
+     */
+    protected function performJoin($query = null)
+    {
+        return Publisher::withoutDraftContent(fn () => parent::performJoin($query));
     }
 }
