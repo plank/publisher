@@ -123,7 +123,7 @@ describe('Pivot Draft Detach Events', function () {
         $tracker->assertOnly(['pivotDetaching', 'pivotDetached']);
     });
 
-    it('fires only pivotDraftDetaching and pivotDraftDetached when detaching from a parent that has never been published', function () {
+    it('fires only pivotDiscarding and pivotDiscarded when detaching draft-only pivots from a parent that has never been published', function () {
         $post = Post::factory()->create(['status' => Status::DRAFT]);
         $featured = Post::factory()->create();
         $post->featured()->attach([$featured->getKey()]);
@@ -132,7 +132,8 @@ describe('Pivot Draft Detach Events', function () {
 
         $post->featured()->detach([$featured->getKey()]);
 
-        $tracker->assertOnly(['pivotDraftDetaching', 'pivotDraftDetached']);
+        // Draft-only pivots fire discard events since they are permanently deleted
+        $tracker->assertOnly(['pivotDiscarding', 'pivotDiscarded']);
     });
 
     it('receives correct payload in pivotDraftDetaching event', function () {
@@ -962,5 +963,94 @@ describe('Attach/detach/re-attach event tests', function () {
         expect($tracker->firedEvents)->toContain('pivotDraftAttached');
         expect($tracker->firedEvents)->not->toContain('pivotReattaching');
         expect($tracker->firedEvents)->not->toContain('pivotReattached');
+    });
+
+    it('fires draft attach events (not reattach) when re-attaching a draft-only pivot', function () {
+        $post = Post::factory()->create(['status' => Status::DRAFT]);
+        $featured = Post::factory()->create();
+
+        // Attach and detach draft-only pivot
+        $post->featured()->attach([$featured->getKey()]);
+        $post->featured()->detach([$featured->getKey()]);
+
+        $tracker = PivotEventTracker::make();
+
+        // Re-attach should fire draft attach events (not reattach) since it was never published
+        $post->featured()->attach([$featured->getKey()]);
+
+        expect($tracker->firedEvents)->toContain('pivotDraftAttaching');
+        expect($tracker->firedEvents)->toContain('pivotDraftAttached');
+        expect($tracker->firedEvents)->not->toContain('pivotReattaching');
+        expect($tracker->firedEvents)->not->toContain('pivotReattached');
+    });
+
+    it('fires discard events when detaching draft-only pivots', function () {
+        $post = Post::factory()->create(['status' => Status::DRAFT]);
+        $featured = Post::factory()->create();
+
+        // Attach draft-only pivot
+        $post->featured()->attach([$featured->getKey()]);
+
+        $tracker = PivotEventTracker::make();
+
+        // Detach should fire discard events (not draft detach) for draft-only pivots
+        $post->featured()->detach([$featured->getKey()]);
+
+        expect($tracker->firedEvents)->toContain('pivotDiscarding');
+        expect($tracker->firedEvents)->toContain('pivotDiscarded');
+        expect($tracker->firedEvents)->not->toContain('pivotDraftDetaching');
+        expect($tracker->firedEvents)->not->toContain('pivotDraftDetached');
+    });
+
+    it('fires draft detach events when detaching published pivots on draft parent', function () {
+        $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $featured = Post::factory()->create();
+
+        // Attach while published
+        $post->featured()->attach([$featured->getKey()]);
+
+        // Unpublish parent
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $tracker = PivotEventTracker::make();
+
+        // Detach should fire draft detach events (not discard) for published pivots
+        $post->featured()->detach([$featured->getKey()]);
+
+        expect($tracker->firedEvents)->toContain('pivotDraftDetaching');
+        expect($tracker->firedEvents)->toContain('pivotDraftDetached');
+        expect($tracker->firedEvents)->not->toContain('pivotDiscarding');
+        expect($tracker->firedEvents)->not->toContain('pivotDiscarded');
+    });
+
+    it('fires both discard and draft detach events for mixed pivot types', function () {
+        $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $publishedFeatured = Post::factory()->create();
+        $draftFeatured = Post::factory()->create();
+
+        // Attach one while published
+        $post->featured()->attach([$publishedFeatured->getKey()]);
+
+        // Unpublish and attach another (draft-only)
+        $post->status = Status::DRAFT;
+        $post->save();
+        $post->featured()->attach([$draftFeatured->getKey()]);
+
+        $tracker = PivotEventTracker::make();
+
+        // Detach both - should fire discard for draft-only, draft detach for published
+        $post->featured()->detach([
+            $publishedFeatured->getKey(),
+            $draftFeatured->getKey(),
+        ]);
+
+        // Discard events for draft-only pivot
+        expect($tracker->firedEvents)->toContain('pivotDiscarding');
+        expect($tracker->firedEvents)->toContain('pivotDiscarded');
+
+        // Draft detach events for published pivot
+        expect($tracker->firedEvents)->toContain('pivotDraftDetaching');
+        expect($tracker->firedEvents)->toContain('pivotDraftDetached');
     });
 });

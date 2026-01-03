@@ -814,4 +814,80 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         expect($posts)->toHaveCount(1);
         expect($posts->first()->pivot->id)->toBe($originalPivotId);
     });
+
+    it('actually deletes draft-only pivots on detach and creates fresh on re-attach', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::DRAFT,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while draft
+        $post->featured()->attach([$featured->getKey()]);
+
+        $pivot = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->first()->pivot;
+
+        expect((bool) $pivot->has_been_published)->toBeFalse();
+        $originalPivotId = $pivot->id;
+
+        // Detach (should actually delete draft-only pivot)
+        $post->featured()->detach([$featured->getKey()]);
+
+        // Verify pivot is actually gone from database (not just marked)
+        $rawCount = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->count();
+
+        expect($rawCount)->toBe(0);
+
+        // Re-attach creates a fresh pivot
+        $post->featured()->attach([$featured->getKey()]);
+
+        $posts = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        $newPivot = $posts->first()->pivot;
+        expect($newPivot->id)->not->toBe($originalPivotId); // New record
+        expect((bool) $newPivot->has_been_published)->toBeFalse();
+        expect((bool) $newPivot->should_delete)->toBeFalse();
+    });
+
+    it('creates fresh pivots when repeatedly attaching and detaching draft-only pivots', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::DRAFT,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        $pivotIds = [];
+
+        // Repeatedly attach/detach on a draft parent
+        for ($i = 0; $i < 3; $i++) {
+            $post->featured()->attach([$featured->getKey()]);
+            $pivotIds[] = $post->featured()->withPivot(['id'])->first()->pivot->id;
+            $post->featured()->detach([$featured->getKey()]);
+        }
+
+        // All pivot IDs should be different (each attach creates new record)
+        expect(count(array_unique($pivotIds)))->toBe(3);
+
+        // No pivot records should remain
+        $rawCount = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->count();
+
+        expect($rawCount)->toBe(0);
+    });
 });
