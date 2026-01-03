@@ -42,7 +42,7 @@ describe('Publishable pivot attributes can be stored in draft state', function (
         });
     });
 
-    it('updates real columns directly when parent has never been published', function () {
+    it('stores draft attributes when parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -53,10 +53,15 @@ describe('Publishable pivot attributes can be stored in draft state', function (
         $post->featured()->attach([$featured->getKey()], ['order' => 1]);
         $post->featured()->updateExistingPivot($featured->getKey(), ['order' => 5]);
 
-        $pivot = $post->featured()->withPivot(['order'])->first()->pivot;
+        // With draft content allowed, should see draft value overlaid
+        $pivot = $post->featured()->withPivot(['order', 'draft'])->first()->pivot;
+        expect((int) $pivot->order)->toBe(5); // Draft value overlaid
+        expect($pivot->draft)->toBe(['order' => 5]); // Change stored in draft
 
-        expect((int) $pivot->order)->toBe(5); // Real column should be updated
-        expect($pivot->draft)->toBeNull(); // No draft
+        // Pivot is not visible without draft content since has_been_published=false
+        Publisher::withoutDraftContent(function () use ($post) {
+            expect($post->featured()->first())->toBeNull();
+        });
     });
 
     it('updates real columns directly when parent is published', function () {

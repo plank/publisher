@@ -90,7 +90,7 @@ trait HasPublishablePivot
 
     public function sync($ids, $detaching = true)
     {
-        if ($this->isPublished() || ! $this->hasEverBeenPublished()) {
+        if ($this->isPublished()) {
             return $this->pivotEventsSync($ids, $detaching);
         }
 
@@ -126,7 +126,7 @@ trait HasPublishablePivot
      */
     public function attach($ids, array $attributes = [], $touch = true)
     {
-        if ($this->isPublished() || ! $this->hasEverBeenPublished()) {
+        if ($this->isPublished()) {
             return $this->pivotEventsAttach($ids, $attributes, $touch);
         }
 
@@ -159,7 +159,7 @@ trait HasPublishablePivot
      */
     public function detach($ids = null, $touch = true)
     {
-        if ($this->isPublished() || ! $this->hasEverBeenPublished()) {
+        if ($this->isPublished()) {
             return $this->pivotEventsDetach($ids, $touch);
         }
 
@@ -489,7 +489,7 @@ trait HasPublishablePivot
      */
     public function updateExistingPivot($id, array $attributes, $touch = true)
     {
-        if ($this->isPublished() || ! $this->hasEverBeenPublished()) {
+        if ($this->isPublished()) {
             return parent::updateExistingPivot($id, $attributes, $touch);
         }
 
