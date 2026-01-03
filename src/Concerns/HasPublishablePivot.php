@@ -594,7 +594,7 @@ trait HasPublishablePivot
      * @param  array  $ids  IDs of related models to reattach
      * @param  array  $idsAttributes  Map of ID => attributes
      * @param  bool  $touch  Whether to touch timestamps
-     * @return bool|int  Number of reattached pivots, or false if event cancelled
+     * @return bool|int Number of reattached pivots, or false if event cancelled
      */
     protected function reattachWithAttributes(array $ids, array $idsAttributes, bool $touch = true): bool|int
     {
@@ -650,7 +650,7 @@ trait HasPublishablePivot
      *
      * @param  array  $ids  IDs of related models to reattach
      * @param  array  $idsAttributes  Map of ID => attributes
-     * @return int  Number of reattached pivots
+     * @return int Number of reattached pivots
      */
     protected function reattachUsingCustomClass(array $ids, array $idsAttributes): int
     {
