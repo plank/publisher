@@ -36,7 +36,7 @@ describe('Pivot Draft Attach Events', function () {
         $tracker->assertOnly(['pivotAttaching', 'pivotAttached']);
     });
 
-    it('fires only pivotAttaching and pivotAttached when attaching to a parent that has never been published', function () {
+    it('fires only pivotDraftAttaching and pivotDraftAttached when attaching to a parent that has never been published', function () {
         $post = Post::factory()->create(['status' => Status::DRAFT]);
         $featured = Post::factory()->create();
 
@@ -44,7 +44,7 @@ describe('Pivot Draft Attach Events', function () {
 
         $post->featured()->attach([$featured->getKey()]);
 
-        $tracker->assertOnly(['pivotAttaching', 'pivotAttached']);
+        $tracker->assertOnly(['pivotDraftAttaching', 'pivotDraftAttached']);
     });
 
     it('receives correct payload in pivotDraftAttaching event', function () {
@@ -123,7 +123,7 @@ describe('Pivot Draft Detach Events', function () {
         $tracker->assertOnly(['pivotDetaching', 'pivotDetached']);
     });
 
-    it('fires only pivotDetaching and pivotDetached when detaching from a parent that has never been published', function () {
+    it('fires only pivotDraftDetaching and pivotDraftDetached when detaching from a parent that has never been published', function () {
         $post = Post::factory()->create(['status' => Status::DRAFT]);
         $featured = Post::factory()->create();
         $post->featured()->attach([$featured->getKey()]);
@@ -132,7 +132,7 @@ describe('Pivot Draft Detach Events', function () {
 
         $post->featured()->detach([$featured->getKey()]);
 
-        $tracker->assertOnly(['pivotDetaching', 'pivotDetached']);
+        $tracker->assertOnly(['pivotDraftDetaching', 'pivotDraftDetached']);
     });
 
     it('receives correct payload in pivotDraftDetaching event', function () {
@@ -208,7 +208,7 @@ describe('Pivot Draft Sync Events', function () {
         $tracker->assertOnly(['pivotSyncing', 'pivotSynced']);
     });
 
-    it('fires only pivotSyncing and pivotSynced when syncing on a parent that has never been published', function () {
+    it('fires only pivotDraftSyncing and pivotDraftSynced when syncing on a parent that has never been published', function () {
         $post = Post::factory()->create(['status' => Status::DRAFT]);
         $featured = Post::factory()->create();
 
@@ -216,7 +216,7 @@ describe('Pivot Draft Sync Events', function () {
 
         $post->featured()->sync([$featured->getKey()]);
 
-        $tracker->assertOnly(['pivotSyncing', 'pivotSynced']);
+        $tracker->assertOnly(['pivotDraftSyncing', 'pivotDraftSynced']);
     });
 
     it('receives correct payload in pivotDraftSyncing event', function () {
@@ -842,5 +842,55 @@ describe('Event order verification', function () {
 
         expect($tracker->firedEvents[0])->toBe('pivotDiscarding');
         expect($tracker->firedEvents[1])->toBe('pivotDiscarded');
+    });
+});
+
+describe('Pivot event consistency tests', function () {
+    it('treats never-published models the same as was-published-now-draft models', function () {
+        // Consistency test: All unpublished models should behave the same way,
+        // regardless of whether they were ever published before.
+        //
+        // This ensures a simpler mental model:
+        // - Published = pivotAttaching/pivotAttached events
+        // - Not published = pivotDraftAttaching/pivotDraftAttached events
+        $neverPublished = Post::factory()->create(['status' => Status::DRAFT]);
+        $wasPublished = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $wasPublished->status = Status::DRAFT;
+        $wasPublished->save();
+
+        $featured1 = Post::factory()->create();
+        $featured2 = Post::factory()->create();
+
+        // Attach to never-published model
+        $neverPublished->featured()->attach([$featured1->getKey()]);
+        $pivot1 = $neverPublished->featured()->withPivot(['has_been_published'])->first()->pivot;
+
+        // Attach to was-published model
+        $wasPublished->featured()->attach([$featured2->getKey()]);
+        $pivot2 = $wasPublished->featured()->withPivot(['has_been_published'])->first()->pivot;
+
+        // Both should have the same has_been_published value (false)
+        expect((bool) $pivot1->has_been_published)->toBeFalse();
+        expect((bool) $pivot2->has_been_published)->toBeFalse();
+    });
+
+    it('fires pivotAttaching and pivotAttached when publishing a never-published model with draft pivots', function () {
+        // When a model is published for the first time, pivots attached while it was
+        // a draft should fire pivotAttaching/pivotAttached events.
+        $post = Post::factory()->create(['status' => Status::DRAFT]);
+        $featured = Post::factory()->create();
+
+        // Attach while draft - fires pivotDraftAttaching/pivotDraftAttached
+        $post->featured()->attach([$featured->getKey()]);
+
+        $tracker = PivotEventTracker::make();
+
+        // Publish - should fire pivotAttaching/pivotAttached for the draft pivot
+        $post->status = Status::PUBLISHED;
+        $post->save();
+
+        // The 'featured' relation should have fired pivotAttaching/pivotAttached
+        expect($tracker->firedEvents)->toContain('pivotAttaching');
+        expect($tracker->firedEvents)->toContain('pivotAttached');
     });
 });
