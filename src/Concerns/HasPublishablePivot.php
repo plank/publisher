@@ -137,17 +137,79 @@ trait HasPublishablePivot
     {
         [$idsOnly, $idsAttributes] = $this->getIdsWithAttributes($ids, $attributes);
 
-        if ($this->parent->firePivotEvent('pivotDraftAttaching', true, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
-            return false;
+        // Find which IDs have pivots marked for deletion (need reattach instead of insert)
+        $markedForDeletion = $this->getPivotsMarkedForDeletion($idsOnly);
+        $newIds = array_values(array_diff($idsOnly, $markedForDeletion));
+
+        // Reattach those marked for deletion (fires pivotReattaching/pivotReattached)
+        if (! empty($markedForDeletion)) {
+            $reattachResult = $this->reattachWithAttributes($markedForDeletion, $idsAttributes, $touch);
+            if ($reattachResult === false) {
+                return false;
+            }
         }
 
-        $parentResult = parent::attach($ids, $attributes, $touch);
+        // Attach new IDs normally (fires pivotDraftAttaching/pivotDraftAttached)
+        if (! empty($newIds)) {
+            // Build the IDs parameter for parent::attach, preserving attributes for new IDs only
+            $newIdsForAttach = $this->buildIdsForAttach($ids, $attributes, $newIds);
 
-        if ($this->parent->firePivotEvent('pivotDraftAttached', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
-            return false;
+            if ($this->parent->firePivotEvent('pivotDraftAttaching', true, $this->getRelationName(), $newIds, $idsAttributes) === false) {
+                return false;
+            }
+
+            $parentResult = parent::attach($newIdsForAttach, $attributes, $touch);
+
+            if ($this->parent->firePivotEvent('pivotDraftAttached', false, $this->getRelationName(), $newIds, $idsAttributes) === false) {
+                return false;
+            }
         }
 
-        return $parentResult;
+        return true;
+    }
+
+    /**
+     * Build the IDs parameter for parent::attach, filtering to only include specified IDs.
+     *
+     * This handles the various formats that $ids can be passed in:
+     * - Simple array: [1, 2, 3]
+     * - Associative array with attributes: [1 => ['order' => 1], 2 => ['order' => 2]]
+     *
+     * @param  mixed  $originalIds  The original $ids parameter
+     * @param  array  $attributes  The original $attributes parameter
+     * @param  array  $filterIds  The IDs to include
+     * @return mixed
+     */
+    protected function buildIdsForAttach($originalIds, array $attributes, array $filterIds)
+    {
+        // If attributes were passed separately and originalIds is a simple list, return filtered list
+        if (! empty($attributes) || ! is_array($originalIds)) {
+            return $filterIds;
+        }
+
+        // Check if originalIds is an associative array (IDs with inline attributes)
+        $isAssociative = false;
+        foreach ($originalIds as $key => $value) {
+            if (is_array($value)) {
+                $isAssociative = true;
+                break;
+            }
+        }
+
+        if (! $isAssociative) {
+            return $filterIds;
+        }
+
+        // Rebuild associative array with only the filtered IDs
+        $result = [];
+        foreach ($originalIds as $key => $value) {
+            $id = is_array($value) ? $key : $value;
+            if (in_array($id, $filterIds)) {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -322,6 +384,101 @@ trait HasPublishablePivot
         }
 
         return count($ids);
+    }
+
+    /**
+     * Reattach pivots marked for deletion with optional attributes.
+     *
+     * This method clears the should_delete flag and applies any provided
+     * attributes to the draft column. It fires pivotReattaching/pivotReattached events.
+     *
+     * @param  array  $ids  IDs of related models to reattach
+     * @param  array  $idsAttributes  Map of ID => attributes
+     * @param  bool  $touch  Whether to touch timestamps
+     * @return bool|int  Number of reattached pivots, or false if event cancelled
+     */
+    protected function reattachWithAttributes(array $ids, array $idsAttributes, bool $touch = true): bool|int
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        if ($this->parent->firePivotEvent('pivotReattaching', false, $this->getRelationName(), $ids, $idsAttributes) === false) {
+            return false;
+        }
+
+        $shouldDeleteColumn = config()->get('publisher.columns.should_delete');
+        $pivotDraftColumn = $this->pivotDraftColumn();
+
+        if ($this->using) {
+            $results = $this->reattachUsingCustomClass($ids, $idsAttributes);
+        } else {
+            $results = 0;
+            foreach ($ids as $id) {
+                $attributes = $idsAttributes[$id] ?? [];
+                $updateData = [$shouldDeleteColumn => false];
+
+                // If attributes provided, merge them into the draft column
+                if (! empty($attributes)) {
+                    $currentDraft = $this->getCurrentDraftForId($id);
+                    $updateData[$pivotDraftColumn] = json_encode(
+                        array_merge($currentDraft, $this->filterDraftableAttributes($attributes))
+                    );
+                }
+
+                $updated = parent::newPivotQuery()
+                    ->where($this->getRelatedPivotKeyName(), $id)
+                    ->where($shouldDeleteColumn, true)
+                    ->update($updateData);
+
+                $results += $updated;
+            }
+        }
+
+        if ($this->parent->firePivotEvent('pivotReattached', false, $this->getRelationName(), $ids, $idsAttributes) === false) {
+            return false;
+        }
+
+        if ($touch) {
+            $this->touchIfTouching();
+        }
+
+        return $results;
+    }
+
+    /**
+     * Reattach pivots using a custom pivot class.
+     *
+     * @param  array  $ids  IDs of related models to reattach
+     * @param  array  $idsAttributes  Map of ID => attributes
+     * @return int  Number of reattached pivots
+     */
+    protected function reattachUsingCustomClass(array $ids, array $idsAttributes): int
+    {
+        $results = 0;
+        $shouldDeleteColumn = config()->get('publisher.columns.should_delete');
+        $pivotDraftColumn = $this->pivotDraftColumn();
+
+        foreach ($ids as $id) {
+            $pivot = $this->getCurrentPivotForId($id);
+
+            if ($pivot && $pivot->{$shouldDeleteColumn}) {
+                $pivot->{$shouldDeleteColumn} = false;
+
+                // Apply attributes to draft column if provided
+                $attributes = $idsAttributes[$id] ?? [];
+                if (! empty($attributes)) {
+                    $draft = $pivot->{$pivotDraftColumn} ?? [];
+                    $draft = array_merge($draft, $this->filterDraftableAttributes($attributes));
+                    $pivot->{$pivotDraftColumn} = $draft;
+                }
+
+                $pivot->save();
+                $results++;
+            }
+        }
+
+        return $results;
     }
 
     /**
@@ -545,6 +702,24 @@ trait HasPublishablePivot
         }
 
         return $updated;
+    }
+
+    /**
+     * Get IDs of pivots that are marked for deletion.
+     *
+     * @return array<int|string>
+     */
+    protected function getPivotsMarkedForDeletion(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return parent::newPivotQuery()
+            ->where(config()->get('publisher.columns.should_delete'), true)
+            ->whereIn($this->getRelatedPivotKeyName(), $ids)
+            ->pluck($this->getRelatedPivotKeyName())
+            ->all();
     }
 
     /**

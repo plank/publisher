@@ -894,3 +894,73 @@ describe('Pivot event consistency tests', function () {
         expect($tracker->firedEvents)->toContain('pivotAttached');
     });
 });
+
+describe('Attach/detach/re-attach event tests', function () {
+    it('fires pivotReattaching and pivotReattached when re-attaching a detached pivot', function () {
+        $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $featured = Post::factory()->create();
+
+        // Attach while published
+        $post->featured()->attach([$featured->getKey()]);
+
+        // Unpublish and detach
+        $post->status = Status::DRAFT;
+        $post->save();
+        $post->featured()->detach([$featured->getKey()]);
+
+        $tracker = PivotEventTracker::make();
+
+        // Re-attach should fire reattach events, not draft attach events
+        $post->featured()->attach([$featured->getKey()]);
+
+        expect($tracker->firedEvents)->toContain('pivotReattaching');
+        expect($tracker->firedEvents)->toContain('pivotReattached');
+        expect($tracker->firedEvents)->not->toContain('pivotDraftAttaching');
+        expect($tracker->firedEvents)->not->toContain('pivotDraftAttached');
+    });
+
+    it('fires both reattach and draft attach events for mixed IDs', function () {
+        $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $existingFeatured = Post::factory()->create();
+        $newFeatured = Post::factory()->create();
+
+        // Attach one while published
+        $post->featured()->attach([$existingFeatured->getKey()]);
+
+        // Unpublish and detach
+        $post->status = Status::DRAFT;
+        $post->save();
+        $post->featured()->detach([$existingFeatured->getKey()]);
+
+        $tracker = PivotEventTracker::make();
+
+        // Attach both: one reattach, one new
+        $post->featured()->attach([
+            $existingFeatured->getKey(),
+            $newFeatured->getKey(),
+        ]);
+
+        // Should fire reattach events for existing
+        expect($tracker->firedEvents)->toContain('pivotReattaching');
+        expect($tracker->firedEvents)->toContain('pivotReattached');
+
+        // Should fire draft attach events for new
+        expect($tracker->firedEvents)->toContain('pivotDraftAttaching');
+        expect($tracker->firedEvents)->toContain('pivotDraftAttached');
+    });
+
+    it('fires only draft attach events when no pivots need reattachment', function () {
+        $post = Post::factory()->create(['status' => Status::DRAFT]);
+        $featured = Post::factory()->create();
+
+        $tracker = PivotEventTracker::make();
+
+        // Simple attach on draft parent
+        $post->featured()->attach([$featured->getKey()]);
+
+        expect($tracker->firedEvents)->toContain('pivotDraftAttaching');
+        expect($tracker->firedEvents)->toContain('pivotDraftAttached');
+        expect($tracker->firedEvents)->not->toContain('pivotReattaching');
+        expect($tracker->firedEvents)->not->toContain('pivotReattached');
+    });
+});
