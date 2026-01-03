@@ -33,7 +33,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect((bool) $pivot->should_delete)->toBeFalse();
     });
 
-    it('attaches records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('attaches records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -70,7 +70,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect($post->customMedia()->get())->toBeEmpty();
     });
 
-    it('detaches records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('detaches records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -114,7 +114,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect((bool) $pivot->should_delete)->toBeFalse();
     });
 
-    it('toggles records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('toggles records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -173,7 +173,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect((bool) $pivot->should_delete)->toBeFalse();
     });
 
-    it('syncs records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('syncs records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -236,7 +236,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect((bool) $pivot->should_delete)->toBeFalse();
     });
 
-    it('syncs without detaching records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('syncs without detaching records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -304,7 +304,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect($pivot->collection)->toBe('downloads');
     });
 
-    it('syncs with pivot values records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('syncs with pivot values records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -391,7 +391,7 @@ describe('Publishable MorphToMany relationships using a custom pivot can be mana
         expect($pivot->id)->toBe($originalPivotId);
     });
 
-    it('updates existing pivot records correctly on publishable custom morph pivots when the parent is not published', function () {
+    it('updates existing pivot records correctly on publishable custom morph pivots when the parent has never been published', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
