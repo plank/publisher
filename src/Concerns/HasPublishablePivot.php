@@ -110,11 +110,17 @@ trait HasPublishablePivot
             $parentResult = parent::sync($ids, $detaching);
         });
 
-        if ($this->parent->firePivotEvent('pivotDraftSynced', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
+        $draftSynced = [
+            'draftAttached' => $parentResult['attached'] ?? [],
+            'draftUpdated' => $parentResult['updated'] ?? [],
+            'draftDetached' => $parentResult['detached'] ?? [],
+        ];
+
+        if ($this->parent->firePivotEvent('pivotDraftSynced', false, $this->getRelationName(), $draftSynced) === false) {
             return false;
         }
 
-        return $parentResult;
+        return $draftSynced;
     }
 
     /**
