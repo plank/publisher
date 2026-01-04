@@ -553,3 +553,134 @@ describe('Publishable BelongsToMany relationships can be managed via publishing 
         expect((bool) $pivot->should_delete)->toBeFalse();
     });
 });
+
+describe('Attach/detach/re-attach cycles on publishable custom pivots', function () {
+    beforeEach(function () {
+        Publisher::allowDraftContent();
+    });
+
+    it('reattaches a previously published custom pivot without creating duplicates', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while published
+        $post->customFeatured()->attach([$featured->getKey()]);
+
+        $pivot = $post->customFeatured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->first()->pivot;
+
+        expect((bool) $pivot->has_been_published)->toBeTrue();
+        $originalPivotId = $pivot->id;
+
+        // Unpublish parent
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        // Detach (marks for deletion)
+        $post->customFeatured()->detach([$featured->getKey()]);
+
+        // Verify pivot is marked for deletion
+        expect($post->customFeatured()->get())->toBeEmpty();
+
+        // Re-attach the same item
+        $post->customFeatured()->attach([$featured->getKey()]);
+
+        // Verify: same pivot record (no duplicate), should_delete cleared
+        $posts = $post->customFeatured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        $pivot = $posts->first()->pivot;
+        expect($pivot->id)->toBe($originalPivotId);
+        expect((bool) $pivot->has_been_published)->toBeTrue();
+        expect((bool) $pivot->should_delete)->toBeFalse();
+    });
+
+    it('reattaches custom pivot with attributes applied to draft column', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while published with initial attributes
+        $post->customFeatured()->attach([$featured->getKey() => ['order' => 1]]);
+
+        $pivot = $post->customFeatured()->withPivot([
+            'id',
+            'order',
+            'has_been_published',
+            'should_delete',
+        ])->first()->pivot;
+
+        expect((int) $pivot->order)->toBe(1);
+        $originalPivotId = $pivot->id;
+
+        // Unpublish and detach
+        $post->status = Status::DRAFT;
+        $post->save();
+        $post->customFeatured()->detach([$featured->getKey()]);
+
+        // Re-attach with new attributes
+        $post->customFeatured()->attach([$featured->getKey() => ['order' => 5]]);
+
+        // Verify: same pivot, new attributes in draft
+        $posts = $post->customFeatured()->withPivot([
+            'id',
+            'order',
+            'draft',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        $pivot = $posts->first()->pivot;
+        expect($pivot->id)->toBe($originalPivotId);
+        expect((int) $pivot->order)->toBe(5); // Draft value merged
+        expect((bool) $pivot->should_delete)->toBeFalse();
+    });
+
+    it('does not create duplicates when repeatedly attaching and detaching custom pivots', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while published
+        $post->customFeatured()->attach([$featured->getKey()]);
+        $originalPivotId = $post->customFeatured()->withPivot(['id'])->first()->pivot->id;
+
+        // Unpublish
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        // Repeatedly attach/detach
+        for ($i = 0; $i < 5; $i++) {
+            $post->customFeatured()->detach([$featured->getKey()]);
+            $post->customFeatured()->attach([$featured->getKey()]);
+        }
+
+        // Verify only one pivot record exists
+        $posts = $post->customFeatured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        expect($posts->first()->pivot->id)->toBe($originalPivotId);
+    });
+});
