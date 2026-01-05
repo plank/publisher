@@ -14,6 +14,7 @@ use Plank\Publisher\Contracts\Publishable;
 class PublisherService
 {
     protected bool $draftContentAllowed = false;
+
     protected bool $draftPivotConstraints = true;
 
     public function shouldEnableDraftContent(Request $request): bool
