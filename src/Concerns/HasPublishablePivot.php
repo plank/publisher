@@ -527,7 +527,7 @@ trait HasPublishablePivot
     {
         /** @var Query $pivotQuery */
         $pivotQuery = parent::newPivotQuery()
-            ->where(config()->get('publisher.columns.should_delete'), false)
+            ->where(config()->get('publisher.columns.has_been_published'), false)
             ->when($ids, fn (Query $query) => $query->whereIn(
                 $this->getRelatedPivotKeyName(),
                 $ids,
@@ -550,6 +550,39 @@ trait HasPublishablePivot
         }
 
         if ($this->parent->firePivotEvent('pivotDiscarded', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
+            return false;
+        }
+
+        return count($ids);
+    }
+
+    public function forceDetach($ids = null, $touch = true): bool|int
+    {
+        /** @var Query $pivotQuery */
+        $pivotQuery = parent::newPivotQuery()
+            ->where(config()->get('publisher.columns.should_delete'), true)
+            ->when($ids, fn (Query $query) => $query->whereIn(
+                $this->getRelatedPivotKeyName(),
+                $ids,
+            ));
+
+        $ids = $pivotQuery->get($this->getRelatedPivotKeyName())
+            ->pluck($this->getRelatedPivotKeyName())
+            ->toArray();
+
+        [$idsOnly, $idsAttributes] = $this->getIdsWithAttributes($ids);
+
+        if ($this->parent->firePivotEvent('pivotDetaching', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
+            return false;
+        }
+
+        $pivotQuery->delete();
+
+        if ($touch) {
+            $this->touchIfTouching();
+        }
+
+        if ($this->parent->firePivotEvent('pivotDetached', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
             return false;
         }
 
