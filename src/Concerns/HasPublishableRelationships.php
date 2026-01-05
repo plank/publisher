@@ -50,16 +50,19 @@ trait HasPublishableRelationships
 
     protected function revertPublishableRelations()
     {
-        $this->publishablePivots()
-            ->each(function (Relation&PublishablePivot $relation) {
-                $relation->discard();
-            });
-
+        // First, restore published pivots that were marked for deletion
         $this->publishablePivots()
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation->reattach();
             });
 
+        // Then, discard draft-only pivots (and any remaining should_delete=true)
+        $this->publishablePivots()
+            ->each(function (Relation&PublishablePivot $relation) {
+                $relation->discard();
+            });
+
+        // Finally, clear any draft attributes
         $this->publishablePivots()
             ->each(function (Relation&PublishablePivot $relation) {
                 $relation->revertPivotAttributes();
