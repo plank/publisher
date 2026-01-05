@@ -14,6 +14,7 @@ use Plank\Publisher\Contracts\Publishable;
 class PublisherService
 {
     protected bool $draftContentAllowed = false;
+    protected bool $draftPivotConstraints = true;
 
     public function shouldEnableDraftContent(Request $request): bool
     {
@@ -98,6 +99,52 @@ class PublisherService
             return $closure();
         } finally {
             $this->draftContentAllowed = $draftState;
+        }
+    }
+
+    public function draftPivotConstraintsRestricted(): bool
+    {
+        return ! $this->draftPivotConstraints;
+    }
+
+    public function draftPivotConstraintsAllowed(): bool
+    {
+        return $this->draftPivotConstraints;
+    }
+
+    public function allowDraftPivotConstraints(): void
+    {
+        $this->draftPivotConstraints = true;
+    }
+
+    public function restrictDraftPivotConstraints(): void
+    {
+        $this->draftPivotConstraints = false;
+    }
+
+    public function withDraftPivotConstraints(Closure $closure): mixed
+    {
+        $pivotConstraintsState = $this->draftPivotConstraints;
+
+        try {
+            $this->draftPivotConstraints = true;
+
+            return $closure();
+        } finally {
+            $this->draftPivotConstraints = $pivotConstraintsState;
+        }
+    }
+
+    public function withoutDraftPivotConstraints(Closure $closure): mixed
+    {
+        $pivotConstraintsState = $this->draftPivotConstraints;
+
+        try {
+            $this->draftPivotConstraints = false;
+
+            return $closure();
+        } finally {
+            $this->draftPivotConstraints = $pivotConstraintsState;
         }
     }
 

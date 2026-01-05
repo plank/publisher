@@ -19,6 +19,12 @@ use Plank\Publisher\Contracts\Publishable;
  * @method static void restrictDraftContent()
  * @method static mixed withDraftContent(Closure $closure)
  * @method static mixed withoutDraftContent(Closure $closure)
+ * @method static bool draftPivotConstraintsRestricted(): bool
+ * @method static bool draftPivotConstraintsAllowed(): bool
+ * @method static void allowDraftPivotConstraints(): void
+ * @method static void restrictDraftPivotConstraints(): void
+ * @method static mixed withDraftPivotConstraints(Closure $closure): mixed
+ * @method static mixed withoutDraftPivotConstraints(Closure $closure): mixed
  * @method static Collection<Model&Publishable> publishableModels()
  */
 class Publisher extends Facade
