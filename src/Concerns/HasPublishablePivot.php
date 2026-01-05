@@ -527,7 +527,7 @@ trait HasPublishablePivot
     {
         /** @var Query $pivotQuery */
         $pivotQuery = parent::newPivotQuery()
-            ->where(config()->get('publisher.columns.has_been_published'), false)
+            ->where(config()->get('publisher.columns.should_delete'), false)
             ->when($ids, fn (Query $query) => $query->whereIn(
                 $this->getRelatedPivotKeyName(),
                 $ids,
@@ -560,7 +560,7 @@ trait HasPublishablePivot
     {
         /** @var Query $pivotQuery */
         $pivotQuery = parent::newPivotQuery()
-            ->where(config()->get('publisher.columns.has_been_published'), true)
+            ->where(config()->get('publisher.columns.should_delete'), true)
             ->when($ids, fn (Query $query) => $query->whereIn(
                 $this->getRelatedPivotKeyName(),
                 $ids,
@@ -775,6 +775,13 @@ trait HasPublishablePivot
         return $query;
     }
 
+    protected bool $publisherPivotConstraintsDisabled = false;
+
+    public function withoutPublisherPivotConstraints()
+    {
+
+    }
+
     /**
      * Set the where clause for the relation query.
      *
@@ -786,6 +793,10 @@ trait HasPublishablePivot
 
         Publisher::withoutDraftContent(function () use ($allowingDraftContent) {
             parent::addWhereConstraints();
+
+            if (Publisher::draftPivotConstraintsRestricted()) {
+                return;
+            }
 
             if ($allowingDraftContent) {
                 $this->query->where(
