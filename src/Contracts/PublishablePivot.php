@@ -10,6 +10,8 @@ interface PublishablePivot
 
     public function discard($ids = null, $touch = true): bool|int;
 
+    public function forceDetach($ids = null, $touch = true): bool|int;
+
     public function reattach($ids = null, $touch = true): bool|int;
 
     public function publish($ids = null, $touch = true): bool|int;
