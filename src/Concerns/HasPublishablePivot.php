@@ -777,10 +777,7 @@ trait HasPublishablePivot
 
     protected bool $publisherPivotConstraintsDisabled = false;
 
-    public function withoutPublisherPivotConstraints()
-    {
-
-    }
+    public function withoutPublisherPivotConstraints() {}
 
     /**
      * Set the where clause for the relation query.
