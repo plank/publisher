@@ -890,4 +890,160 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
 
         expect($rawCount)->toBe(0);
     });
+
+    it('reattach method clears the should_delete flag', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create();
+
+        // Attach while published
+        $post->featured()->attach([$featured->getKey()]);
+
+        $pivot = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->first()->pivot;
+
+        expect((bool) $pivot->has_been_published)->toBeTrue();
+        expect((bool) $pivot->should_delete)->toBeFalse();
+        $originalPivotId = $pivot->id;
+
+        // Unpublish parent
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        // Detach (marks for deletion, not actually deleted)
+        $post->featured()->detach([$featured->getKey()]);
+
+        // Verify pivot is marked for deletion in raw database
+        $rawPivot = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->first();
+
+        expect($rawPivot)->not->toBeNull();
+        expect((bool) $rawPivot->should_delete)->toBeTrue();
+
+        // Call reattach explicitly
+        $reattachedCount = $post->featured()->reattach([$featured->getKey()]);
+
+        expect($reattachedCount)->toBe(1);
+
+        // Verify should_delete flag is cleared
+        $rawPivot = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->first();
+
+        expect($rawPivot)->not->toBeNull();
+        expect((bool) $rawPivot->should_delete)->toBeFalse();
+        expect($rawPivot->id)->toBe($originalPivotId);
+
+        // Verify pivot is accessible through the relationship again
+        $posts = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        $pivot = $posts->first()->pivot;
+        expect($pivot->id)->toBe($originalPivotId);
+        expect((bool) $pivot->has_been_published)->toBeTrue();
+        expect((bool) $pivot->should_delete)->toBeFalse();
+    });
+
+    it('reattached pivot is not deleted when parent is published', function () {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $featured = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        // Attach while published
+        $post->featured()->attach([$featured->getKey()]);
+
+        $pivot = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->first()->pivot;
+
+        $originalPivotId = $pivot->id;
+
+        // Unpublish parent
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        // Detach (marks for deletion)
+        $post->featured()->detach([$featured->getKey()]);
+
+        // Verify pivot is marked for deletion but has_been_published is still true
+        $rawPivot = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->first();
+
+        expect((bool) $rawPivot->should_delete)->toBeTrue();
+        expect((bool) $rawPivot->has_been_published)->toBeTrue();
+
+        // Call reattach to bring it back and verify it found the pivot
+        $reattachedCount = $post->featured()->reattach([$featured->getKey()]);
+
+        expect($reattachedCount)->toBe(1);
+
+        // Verify should_delete is now false
+        $rawPivot = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->first();
+
+        expect((bool) $rawPivot->should_delete)->toBeFalse();
+
+        // Publish the parent - the pivot should NOT be deleted
+        $post->refresh();
+        $post->status = Status::PUBLISHED;
+        $post->save();
+
+        // Verify pivot still exists after publishing
+        $rawPivot = \DB::table('post_post')
+            ->where('post_id', $post->id)
+            ->where('featured_id', $featured->id)
+            ->first();
+
+        expect($rawPivot)->not->toBeNull();
+        expect($rawPivot->id)->toBe($originalPivotId);
+
+        // Verify pivot is accessible in both draft and published modes
+        $posts = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        $pivot = $posts->first()->pivot;
+        expect($pivot->id)->toBe($originalPivotId);
+        expect((bool) $pivot->has_been_published)->toBeTrue();
+        expect((bool) $pivot->should_delete)->toBeFalse();
+
+        // Also verify it's visible when restricting to published content
+        Publisher::restrictDraftContent();
+
+        $posts = $post->featured()->withPivot([
+            'id',
+            'has_been_published',
+            'should_delete',
+        ])->get();
+
+        expect($posts)->toHaveCount(1);
+        expect($posts->first()->pivot->id)->toBe($originalPivotId);
+    });
 });
