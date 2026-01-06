@@ -103,7 +103,7 @@ $post->tags()->detach($tag);
 
 ### When Parent is Draft
 
-Changes are queued:
+Changes are queued or handled immediately depending on the pivot's published status:
 
 ```php
 $post->status = Status::DRAFT;
@@ -113,9 +113,28 @@ $post->save();
 $post->tags()->attach($newTag);
 // Pivot: has_been_published = false, should_delete = false
 
-// Existing attachment queued for deletion
-$post->tags()->detach($existingTag);
-// Pivot: should_delete = true (not deleted yet)
+// Detaching behaves differently based on pivot status:
+
+// 1. Draft-only pivot (has_been_published = false): permanently deleted
+$post->tags()->detach($draftOnlyTag);
+// Fires: pivotDiscarding, pivotDiscarded
+// Pivot record deleted immediately
+
+// 2. Published pivot (has_been_published = true): queued for deletion
+$post->tags()->detach($publishedTag);
+// Fires: pivotDraftDetaching, pivotDraftDetached
+// Pivot: should_delete = true (deleted on publish)
+```
+
+### Reattaching Detached Pivots
+
+When you attach an ID that has a pivot marked for deletion (`should_delete = true`), the system automatically reattaches it instead of creating a new pivot:
+
+```php
+// Tag was previously detached (should_delete = true)
+$post->tags()->attach($previouslyDetachedTag, ['position' => 5]);
+// Fires: pivotReattaching, pivotReattached (not pivotDraftAttaching)
+// Pivot: should_delete = false, position stored in draft
 ```
 
 ### On Publish
@@ -178,8 +197,13 @@ $post->tags()->publish();
 // Discard unpublished attachments
 $post->tags()->discard();
 
-// Restore discarded (should_delete) records
+// Restore pivots marked for deletion (should_delete = true)
 $post->tags()->reattach();
+$post->tags()->reattach([$tag1, $tag2]); // Specific IDs only
+
+// Force delete pivots marked for deletion (should_delete = true)
+$post->tags()->forceDetach();
+$post->tags()->forceDetach([$tag1, $tag2]); // Specific IDs only
 
 // Delete all queued-for-deletion records
 $post->tags()->flush();
