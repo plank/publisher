@@ -165,10 +165,18 @@ These events fire during publishable relationship operations.
 ```php
 static::pivotDraftSyncing(function ($post, $relation, $ids, $attributes) {
     // Before sync in draft mode
+    // $ids: array of IDs being synced
+    // $attributes: array of ID => attributes
 });
 
 static::pivotDraftSynced(function ($post, $relation, $changes) {
     // After sync in draft mode
+    // $changes contains:
+    // [
+    //     'draftAttached' => [1, 2],    // IDs of newly attached pivots
+    //     'draftUpdated' => [3],         // IDs of updated pivots
+    //     'draftDetached' => [4, 5],     // IDs of detached pivots
+    // ]
 });
 ```
 
@@ -186,13 +194,16 @@ static::pivotDraftAttached(function ($post, $relation, $ids, $attributes) {
 
 ### pivotDraftDetaching / pivotDraftDetached
 
+Fired when **published** pivots are marked for deletion (not for draft-only pivots, which fire `pivotDiscarding`/`pivotDiscarded` instead):
+
 ```php
 static::pivotDraftDetaching(function ($post, $relation, $ids) {
-    // Before detach in draft mode (records will be suspended)
+    // Before published pivots are marked for deletion (should_delete = true)
+    // $ids: array of related model IDs being detached
 });
 
 static::pivotDraftDetached(function ($post, $relation, $ids) {
-    // After detach in draft mode
+    // After published pivots have been marked for deletion
 });
 ```
 
@@ -210,25 +221,32 @@ static::pivotDraftUpdated(function ($post, $relation, $id, $attributes) {
 
 ### pivotReattaching / pivotReattached
 
+Fired when pivots marked for deletion are restored:
+
 ```php
-static::pivotReattaching(function ($post, $relation) {
-    // Before suspended pivots are restored
+static::pivotReattaching(function ($post, $relation, $ids, $attributes) {
+    // Before pivots marked for deletion are restored
+    // $ids: array of related model IDs being reattached
+    // $attributes: array of ID => attributes being applied
 });
 
-static::pivotReattached(function ($post, $relation) {
-    // After suspended pivots restored
+static::pivotReattached(function ($post, $relation, $ids, $attributes) {
+    // After pivots have been restored
 });
 ```
 
 ### pivotDiscarding / pivotDiscarded
 
+Fired when draft-only pivots (never published) are permanently deleted:
+
 ```php
-static::pivotDiscarding(function ($post, $relation) {
-    // Before unpublished pivot attachments are removed
+static::pivotDiscarding(function ($post, $relation, $ids) {
+    // Before draft-only pivots are permanently deleted
+    // $ids: array of related model IDs being discarded
 });
 
-static::pivotDiscarded(function ($post, $relation) {
-    // After unpublished pivot attachments removed
+static::pivotDiscarded(function ($post, $relation, $ids) {
+    // After draft-only pivots have been deleted
 });
 ```
 
