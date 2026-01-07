@@ -103,7 +103,7 @@ $post->tags()->detach($tag);
 
 ### When Parent is Draft
 
-Changes are queued or handled immediately depending on the pivot's published status:
+Changes are queued for the next publish:
 
 ```php
 $post->status = Status::DRAFT;
@@ -112,19 +112,15 @@ $post->save();
 // New attachment is drafted
 $post->tags()->attach($newTag);
 // Pivot: has_been_published = false, should_delete = false
+// Fires: pivotDraftAttaching, pivotDraftAttached
 
-// Detaching behaves differently based on pivot status:
-
-// 1. Draft-only pivot (has_been_published = false): permanently deleted
-$post->tags()->detach($draftOnlyTag);
-// Fires: pivotDiscarding, pivotDiscarded
-// Pivot record deleted immediately
-
-// 2. Published pivot (has_been_published = true): queued for deletion
-$post->tags()->detach($publishedTag);
+// Detaching marks pivot for deletion (consistent for all pivot types)
+$post->tags()->detach($tag);
 // Fires: pivotDraftDetaching, pivotDraftDetached
 // Pivot: should_delete = true (deleted on publish)
 ```
+
+> **Note:** Detaching in draft mode behaves consistently regardless of whether the pivot has been published. All pivots are marked with `should_delete = true` and the actual deletion happens during publish. The events fired during publish differ based on `has_been_published` status (see "On Publish" below).
 
 ### Reattaching Detached Pivots
 
@@ -139,11 +135,18 @@ $post->tags()->attach($previouslyDetachedTag, ['position' => 5]);
 
 ### On Publish
 
-When the parent is published:
+When the parent is published, pivot changes are finalized in this order:
 
-1. Queued deletions (`should_delete = true`) are executed
-2. New attachments (`has_been_published = false`) are marked as published
-3. Pivot draft attributes are published
+1. **Discard draft-only marked pivots** - Pivots with `should_delete = true` AND `has_been_published = false` are permanently deleted
+   - Fires: `pivotDiscarding`, `pivotDiscarded`
+
+2. **Detach published marked pivots** - Pivots with `should_delete = true` AND `has_been_published = true` are permanently deleted
+   - Fires: `pivotDetaching`, `pivotDetached`
+
+3. **Publish draft pivots** - Pivots with `has_been_published = false` (without `should_delete`) are marked as published
+   - Fires: `pivotAttaching`, `pivotAttached`
+
+4. **Publish pivot attributes** - Draft attribute values are moved to their regular columns
 
 ```php
 // Publishing the post finalizes all pivot changes
@@ -152,11 +155,15 @@ $post->update(['status' => Status::PUBLISHED]);
 
 ### On Revert
 
-When the parent is reverted:
+When the parent is reverted, pivot changes are rolled back in this order:
 
-1. Unpublished attachments are discarded
-2. Queued deletions are restored
-3. Pivot draft attributes are cleared
+1. **Restore marked pivots** - Pivots with `should_delete = true` have the flag cleared
+   - Fires: `pivotReattaching`, `pivotReattached`
+
+2. **Discard draft-only pivots** - Pivots with `has_been_published = false` are permanently deleted
+   - Fires: `pivotDiscarding`, `pivotDiscarded`
+
+3. **Clear pivot draft attributes** - Draft attribute values are reset to null
 
 ```php
 // Reverting discards pending pivot changes
@@ -219,20 +226,31 @@ $post->tags()->revertPivotAttributes();
 
 Publishable relationships fire additional events:
 
+### Draft Operations (while parent is draft)
+
 | Event | When |
 |-------|------|
 | `pivotDraftSyncing` | Before sync operation in draft |
 | `pivotDraftSynced` | After sync operation in draft |
-| `pivotDraftAttaching` | Before attach in draft |
-| `pivotDraftAttached` | After attach in draft |
-| `pivotDraftDetaching` | Before detach in draft |
-| `pivotDraftDetached` | After detach in draft |
-| `pivotDraftUpdating` | Before pivot update in draft |
-| `pivotDraftUpdated` | After pivot update in draft |
-| `pivotReattaching` | Before restoring detached |
-| `pivotReattached` | After restoring detached |
-| `pivotDiscarding` | Before discarding unpublished |
-| `pivotDiscarded` | After discarding unpublished |
+| `pivotDraftAttaching` | Before attach creates new pivot in draft |
+| `pivotDraftAttached` | After attach creates new pivot in draft |
+| `pivotDraftDetaching` | Before detach marks pivot (`should_delete = true`) |
+| `pivotDraftDetached` | After detach marks pivot |
+| `pivotDraftUpdating` | Before pivot attributes update in draft |
+| `pivotDraftUpdated` | After pivot attributes update in draft |
+| `pivotReattaching` | Before restoring marked pivot (`should_delete = false`) |
+| `pivotReattached` | After restoring marked pivot |
+
+### Publish/Revert Operations
+
+| Event | When |
+|-------|------|
+| `pivotAttaching` | Before draft pivot becomes published |
+| `pivotAttached` | After draft pivot becomes published |
+| `pivotDetaching` | Before published pivot is permanently deleted |
+| `pivotDetached` | After published pivot is permanently deleted |
+| `pivotDiscarding` | Before draft-only pivot is permanently deleted |
+| `pivotDiscarded` | After draft-only pivot is permanently deleted |
 
 ```php
 class Post extends Model implements Publishable
