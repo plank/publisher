@@ -194,18 +194,20 @@ static::pivotDraftAttached(function ($post, $relation, $ids, $attributes) {
 
 ### pivotDraftDetaching / pivotDraftDetached
 
-Fired when **published** pivots are marked for deletion (not for draft-only pivots, which fire `pivotDiscarding`/`pivotDiscarded` instead):
+Fired when pivots are marked for deletion in draft mode. This event fires for **all** pivots regardless of their `has_been_published` status:
 
 ```php
 static::pivotDraftDetaching(function ($post, $relation, $ids) {
-    // Before published pivots are marked for deletion (should_delete = true)
+    // Before pivots are marked for deletion (should_delete = true)
     // $ids: array of related model IDs being detached
 });
 
 static::pivotDraftDetached(function ($post, $relation, $ids) {
-    // After published pivots have been marked for deletion
+    // After pivots have been marked for deletion
 });
 ```
+
+> **Note:** This event fires consistently whether the pivot has been published or not. The actual deletion happens later during `flush()` (on publish), which fires either `pivotDiscarding`/`pivotDiscarded` for draft-only pivots or `pivotDetaching`/`pivotDetached` for published pivots.
 
 ### pivotDraftUpdating / pivotDraftUpdated
 
@@ -237,7 +239,10 @@ static::pivotReattached(function ($post, $relation, $ids, $attributes) {
 
 ### pivotDiscarding / pivotDiscarded
 
-Fired when draft-only pivots (never published) are permanently deleted:
+Fired when draft-only pivots (`has_been_published = false`) are permanently deleted. This typically happens during:
+- `flush()` when the parent is published (for pivots with `should_delete = true`)
+- `discard()` when reverting the parent
+- `revert()` on the parent model
 
 ```php
 static::pivotDiscarding(function ($post, $relation, $ids) {
@@ -248,6 +253,71 @@ static::pivotDiscarding(function ($post, $relation, $ids) {
 static::pivotDiscarded(function ($post, $relation, $ids) {
     // After draft-only pivots have been deleted
 });
+```
+
+> **Note:** When detaching pivots in draft mode, `pivotDraftDetaching`/`pivotDraftDetached` fires instead (marking `should_delete = true`). The `pivotDiscarding`/`pivotDiscarded` events only fire during the actual permanent deletion.
+
+### pivotAttaching / pivotAttached
+
+Fired when pivots are published (during parent publish). This marks draft pivots as `has_been_published = true`:
+
+```php
+static::pivotAttaching(function ($post, $relation, $ids) {
+    // Before draft pivots become published
+});
+
+static::pivotAttached(function ($post, $relation, $ids) {
+    // After draft pivots have been published
+});
+```
+
+### pivotDetaching / pivotDetached
+
+Fired when published pivots (`has_been_published = true`) are permanently deleted during `flush()`:
+
+```php
+static::pivotDetaching(function ($post, $relation, $ids) {
+    // Before published pivots are permanently deleted
+});
+
+static::pivotDetached(function ($post, $relation, $ids) {
+    // After published pivots have been deleted
+});
+```
+
+## Pivot Event Flow
+
+### On Parent Publish
+
+When a parent model is published, the following pivot events fire in order:
+
+1. **`pivotDiscarding`/`pivotDiscarded`** - Draft-only pivots (`has_been_published = false`) with `should_delete = true` are permanently deleted
+2. **`pivotDetaching`/`pivotDetached`** - Published pivots (`has_been_published = true`) with `should_delete = true` are permanently deleted
+3. **`pivotAttaching`/`pivotAttached`** - Draft pivots (`has_been_published = false`) without `should_delete` become published
+
+### On Parent Revert
+
+When a parent model is reverted:
+
+1. **`pivotReattaching`/`pivotReattached`** - Pivots with `should_delete = true` are restored
+2. **`pivotDiscarding`/`pivotDiscarded`** - Draft-only pivots (`has_been_published = false`) are permanently deleted
+
+## No-Op Behavior
+
+Pivot events only fire when the operation actually changes state. Repeated operations that don't change pivot state are no-ops and fire no events:
+
+| Operation | No-Op Condition |
+|-----------|----------------|
+| `detach()` in draft | Pivot already has `should_delete = true` |
+| `attach()` in draft | Pivot exists with `should_delete = false` |
+| `reattach()` | Pivot doesn't have `should_delete = true` |
+
+```php
+// First detach - fires pivotDraftDetaching/pivotDraftDetached
+$post->tags()->detach($tagId);
+
+// Second detach on same pivot - no events (already marked)
+$post->tags()->detach($tagId);
 ```
 
 ## Event Registration

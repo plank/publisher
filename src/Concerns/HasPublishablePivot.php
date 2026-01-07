@@ -145,7 +145,12 @@ trait HasPublishablePivot
 
         // Find which IDs have pivots marked for deletion (need reattach instead of insert)
         $markedForDeletion = $this->getPivotsMarkedForDeletion($idsOnly);
-        $newIds = array_values(array_diff($idsOnly, $markedForDeletion));
+
+        // Find all existing pivot IDs to filter out (avoid duplicate inserts)
+        $existingIds = $this->getExistingPivotIds($idsOnly);
+
+        // New IDs are those that don't have any existing pivot
+        $newIds = array_values(array_diff($idsOnly, $existingIds));
 
         // Reattach those marked for deletion (fires pivotReattaching/pivotReattached)
         if (! empty($markedForDeletion)) {
@@ -277,10 +282,11 @@ trait HasPublishablePivot
     }
 
     /**
-     * Detach pivots by their published status.
+     * Mark pivots for deletion by setting should_delete flag.
      *
-     * Draft-only pivots are permanently deleted with discard events.
-     * Published pivots are marked for deletion with draft detach events.
+     * All pivots are marked for deletion regardless of their published status.
+     * The actual deletion happens during publish via flush(), which fires
+     * different events based on has_been_published status.
      *
      * @return bool|int
      */
@@ -292,101 +298,24 @@ trait HasPublishablePivot
             return 0;
         }
 
-        [$draftOnlyIds, $publishedIds] = $this->partitionPivotIdsByPublishedStatus($ids);
+        // Only mark pivots that are not already marked for deletion (avoid no-op events)
+        $idsToMark = $this->getIdsNotMarkedForDeletion($ids);
 
-        $results = 0;
-
-        $discardResult = $this->discardDraftOnlyPivots($draftOnlyIds);
-        if ($discardResult === false) {
-            return false;
-        }
-        $results += $discardResult;
-
-        $markResult = $this->markPublishedPivotsForDeletion($publishedIds);
-        if ($markResult === false) {
-            return false;
-        }
-        $results += $markResult;
-
-        return $results;
-    }
-
-    /**
-     * Partition pivot IDs into draft-only and published groups.
-     *
-     * @return array{0: array, 1: array} [draftOnlyIds, publishedIds]
-     */
-    protected function partitionPivotIdsByPublishedStatus(array $ids): array
-    {
-        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
-
-        $draftOnlyIds = parent::newPivotQuery()
-            ->whereIn($this->getQualifiedRelatedPivotKeyName(), $ids)
-            ->where($hasBeenPublishedColumn, false)
-            ->pluck($this->getRelatedPivotKeyName())
-            ->all();
-
-        $publishedIds = parent::newPivotQuery()
-            ->whereIn($this->getQualifiedRelatedPivotKeyName(), $ids)
-            ->where($hasBeenPublishedColumn, true)
-            ->pluck($this->getRelatedPivotKeyName())
-            ->all();
-
-        return [$draftOnlyIds, $publishedIds];
-    }
-
-    /**
-     * Discard draft-only pivots by permanently deleting them.
-     *
-     * Fires pivotDiscarding/pivotDiscarded events.
-     *
-     * @return bool|int Number of deleted pivots, or false if event cancelled
-     */
-    protected function discardDraftOnlyPivots(array $ids)
-    {
-        if (empty($ids)) {
+        if (empty($idsToMark)) {
             return 0;
         }
 
-        if ($this->parent->firePivotEvent('pivotDiscarding', false, $this->getRelationName(), $ids) === false) {
-            return false;
-        }
-
-        $deletedCount = parent::newPivotQuery()
-            ->whereIn($this->getQualifiedRelatedPivotKeyName(), $ids)
-            ->delete();
-
-        if ($this->parent->firePivotEvent('pivotDiscarded', false, $this->getRelationName(), $ids) === false) {
-            return false;
-        }
-
-        return $deletedCount;
-    }
-
-    /**
-     * Mark published pivots for deletion by setting should_delete flag.
-     *
-     * Fires pivotDraftDetaching/pivotDraftDetached events.
-     *
-     * @return bool|int Number of marked pivots, or false if event cancelled
-     */
-    protected function markPublishedPivotsForDeletion(array $ids)
-    {
-        if (empty($ids)) {
-            return 0;
-        }
-
-        if ($this->parent->firePivotEvent('pivotDraftDetaching', true, $this->getRelationName(), $ids) === false) {
+        if ($this->parent->firePivotEvent('pivotDraftDetaching', true, $this->getRelationName(), $idsToMark) === false) {
             return false;
         }
 
         $markedCount = parent::newPivotQuery()
-            ->whereIn($this->getQualifiedRelatedPivotKeyName(), $ids)
+            ->whereIn($this->getQualifiedRelatedPivotKeyName(), $idsToMark)
             ->update([
                 config()->get('publisher.columns.should_delete') => true,
             ]);
 
-        if ($this->parent->firePivotEvent('pivotDraftDetached', true, $this->getRelationName(), $ids) === false) {
+        if ($this->parent->firePivotEvent('pivotDraftDetached', true, $this->getRelationName(), $idsToMark) === false) {
             return false;
         }
 
@@ -394,129 +323,47 @@ trait HasPublishablePivot
     }
 
     /**
-     * Detach models from the relationship using a custom class.
+     * Mark pivots for deletion using a custom pivot class.
      *
-     * Draft-only pivots (has_been_published=false) are actually deleted with discard events.
-     * Published pivots (has_been_published=true) are marked with should_delete=true with draft detach events.
+     * All pivots are marked for deletion regardless of their published status.
+     * The actual deletion happens during publish via flush(), which fires
+     * different events based on has_been_published status.
      *
      * @param  mixed  $ids
-     * @return int
+     * @return int|false
      */
     public function queueDetachUsingCustomClass($ids)
     {
-        [$draftOnlyIds, $draftOnlyPivots, $publishedIds, $publishedPivots] = $this->categorizePivotsByPublishedStatus($ids);
-
-        $results = 0;
-
-        $discardResult = $this->discardDraftOnlyCustomPivots($draftOnlyIds, $draftOnlyPivots);
-        if ($discardResult === false) {
-            return false;
-        }
-        $results += $discardResult;
-
-        $markResult = $this->markPublishedCustomPivotsForDeletion($publishedIds, $publishedPivots);
-        if ($markResult === false) {
-            return false;
-        }
-        $results += $markResult;
-
-        return $results;
-    }
-
-    /**
-     * Categorize pivots by their published status using custom pivot class.
-     *
-     * @param  mixed  $ids
-     * @return array{0: array, 1: array, 2: array, 3: array} [draftOnlyIds, draftOnlyPivots, publishedIds, publishedPivots]
-     */
-    protected function categorizePivotsByPublishedStatus($ids): array
-    {
-        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
-
-        $draftOnlyIds = [];
-        $draftOnlyPivots = [];
-        $publishedIds = [];
-        $publishedPivots = [];
+        $shouldDeleteColumn = config()->get('publisher.columns.should_delete');
+        $pivotsToMark = [];
+        $idsToMark = [];
 
         foreach ($this->parseIds($ids) as $id) {
             $pivot = $this->getCurrentPivotForId($id);
 
-            if (! $pivot) {
-                continue;
-            }
-
-            if (! $pivot->{$hasBeenPublishedColumn}) {
-                $draftOnlyIds[] = $id;
-                $draftOnlyPivots[] = $pivot;
-            } else {
-                $publishedIds[] = $id;
-                $publishedPivots[] = $pivot;
+            // Only mark pivots that exist and are not already marked for deletion
+            if ($pivot && ! $pivot->{$shouldDeleteColumn}) {
+                $idsToMark[] = $id;
+                $pivotsToMark[] = $pivot;
             }
         }
 
-        return [$draftOnlyIds, $draftOnlyPivots, $publishedIds, $publishedPivots];
-    }
-
-    /**
-     * Discard draft-only custom pivots by permanently deleting them.
-     *
-     * Fires pivotDiscarding/pivotDiscarded events.
-     *
-     * @return bool|int Number of deleted pivots, or false if event cancelled
-     */
-    protected function discardDraftOnlyCustomPivots(array $ids, array $pivots)
-    {
-        if (empty($ids)) {
+        if (empty($idsToMark)) {
             return 0;
         }
 
-        if ($this->parent->firePivotEvent('pivotDiscarding', false, $this->getRelationName(), $ids) === false) {
+        if ($this->parent->firePivotEvent('pivotDraftDetaching', true, $this->getRelationName(), $idsToMark) === false) {
             return false;
         }
 
         $results = 0;
-        foreach ($pivots as $pivot) {
-            $pivot->delete();
+        foreach ($pivotsToMark as $pivot) {
+            $pivot->{$shouldDeleteColumn} = true;
+            $pivot->save();
             $results++;
         }
 
-        if ($this->parent->firePivotEvent('pivotDiscarded', false, $this->getRelationName(), $ids) === false) {
-            return false;
-        }
-
-        return $results;
-    }
-
-    /**
-     * Mark published custom pivots for deletion by setting should_delete flag.
-     *
-     * Fires pivotDraftDetaching/pivotDraftDetached events.
-     *
-     * @return bool|int Number of marked pivots, or false if event cancelled
-     */
-    protected function markPublishedCustomPivotsForDeletion(array $ids, array $pivots)
-    {
-        if (empty($ids)) {
-            return 0;
-        }
-
-        $shouldDeleteColumn = config()->get('publisher.columns.should_delete');
-
-        if ($this->parent->firePivotEvent('pivotDraftDetaching', true, $this->getRelationName(), $ids) === false) {
-            return false;
-        }
-
-        $results = 0;
-        foreach ($pivots as $pivot) {
-            $pivot->{$shouldDeleteColumn} = true;
-
-            if ($pivot->isDirty($shouldDeleteColumn)) {
-                $pivot->save();
-                $results++;
-            }
-        }
-
-        if ($this->parent->firePivotEvent('pivotDraftDetached', true, $this->getRelationName(), $ids) === false) {
+        if ($this->parent->firePivotEvent('pivotDraftDetached', true, $this->getRelationName(), $idsToMark) === false) {
             return false;
         }
 
@@ -603,6 +450,11 @@ trait HasPublishablePivot
             ->pluck($this->getRelatedPivotKeyName())
             ->toArray();
 
+        // No-op if no pivots need reattaching
+        if (empty($ids)) {
+            return 0;
+        }
+
         [$idsOnly, $idsAttributes] = $this->getIdsWithAttributes($ids);
 
         if ($this->parent->firePivotEvent('pivotReattaching', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
@@ -630,6 +482,8 @@ trait HasPublishablePivot
      * This method clears the should_delete flag and applies any provided
      * attributes to the draft column. It fires pivotReattaching/pivotReattached events.
      *
+     * Only fires events if there are actual pivots to reattach (avoids no-op events).
+     *
      * @param  array  $ids  IDs of related models to reattach
      * @param  array  $idsAttributes  Map of ID => attributes
      * @param  bool  $touch  Whether to touch timestamps
@@ -641,7 +495,17 @@ trait HasPublishablePivot
             return 0;
         }
 
-        if ($this->parent->firePivotEvent('pivotReattaching', false, $this->getRelationName(), $ids, $idsAttributes) === false) {
+        // Only reattach pivots that are actually marked for deletion (avoid no-op events)
+        $idsToReattach = $this->getPivotsMarkedForDeletion($ids);
+
+        if (empty($idsToReattach)) {
+            return 0;
+        }
+
+        // Filter attributes to only include IDs we're actually reattaching
+        $filteredAttributes = array_intersect_key($idsAttributes, array_flip($idsToReattach));
+
+        if ($this->parent->firePivotEvent('pivotReattaching', false, $this->getRelationName(), $idsToReattach, $filteredAttributes) === false) {
             return false;
         }
 
@@ -649,11 +513,11 @@ trait HasPublishablePivot
         $pivotDraftColumn = $this->pivotDraftColumn();
 
         if ($this->using) {
-            $results = $this->reattachUsingCustomClass($ids, $idsAttributes);
+            $results = $this->reattachUsingCustomClass($idsToReattach, $filteredAttributes);
         } else {
             $results = 0;
-            foreach ($ids as $id) {
-                $attributes = $idsAttributes[$id] ?? [];
+            foreach ($idsToReattach as $id) {
+                $attributes = $filteredAttributes[$id] ?? [];
                 $updateData = [$shouldDeleteColumn => false];
 
                 // If attributes provided, merge them into the draft column
@@ -673,7 +537,7 @@ trait HasPublishablePivot
             }
         }
 
-        if ($this->parent->firePivotEvent('pivotReattached', false, $this->getRelationName(), $ids, $idsAttributes) === false) {
+        if ($this->parent->firePivotEvent('pivotReattached', false, $this->getRelationName(), $idsToReattach, $filteredAttributes) === false) {
             return false;
         }
 
@@ -758,36 +622,74 @@ trait HasPublishablePivot
         return count($ids);
     }
 
+    /**
+     * Delete all pivots marked for deletion, firing appropriate events.
+     *
+     * Draft-only pivots (has_been_published=false) fire pivotDiscarding/pivotDiscarded.
+     * Published pivots (has_been_published=true) fire pivotDetaching/pivotDetached.
+     */
     public function flush($ids = null, $touch = true): bool|int
     {
-        $pivotQuery = parent::newPivotQuery()
-            ->where(config()->get('publisher.columns.should_delete'), true)
-            ->when($ids, fn (Query $query) => $query->whereIn(
-                $this->getRelatedPivotKeyName(),
-                $ids,
-            ));
+        $shouldDeleteColumn = config()->get('publisher.columns.should_delete');
+        $hasBeenPublishedColumn = config()->get('publisher.columns.has_been_published');
 
-        $ids = $pivotQuery->get($this->getRelatedPivotKeyName())
+        // Get draft-only pivots marked for deletion
+        $draftOnlyIds = parent::newPivotQuery()
+            ->where($shouldDeleteColumn, true)
+            ->where($hasBeenPublishedColumn, false)
+            ->when($ids, fn (Query $query) => $query->whereIn($this->getRelatedPivotKeyName(), $ids))
             ->pluck($this->getRelatedPivotKeyName())
             ->toArray();
 
-        [$idsOnly, $idsAttributes] = $this->getIdsWithAttributes($ids);
+        // Get published pivots marked for deletion
+        $publishedIds = parent::newPivotQuery()
+            ->where($shouldDeleteColumn, true)
+            ->where($hasBeenPublishedColumn, true)
+            ->when($ids, fn (Query $query) => $query->whereIn($this->getRelatedPivotKeyName(), $ids))
+            ->pluck($this->getRelatedPivotKeyName())
+            ->toArray();
 
-        if ($this->parent->firePivotEvent('pivotDetaching', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
-            return false;
+        $results = 0;
+
+        // Discard draft-only pivots (fire pivotDiscarding/pivotDiscarded)
+        if (! empty($draftOnlyIds)) {
+            if ($this->parent->firePivotEvent('pivotDiscarding', false, $this->getRelationName(), $draftOnlyIds) === false) {
+                return false;
+            }
+
+            $results += parent::newPivotQuery()
+                ->where($shouldDeleteColumn, true)
+                ->where($hasBeenPublishedColumn, false)
+                ->when($ids, fn (Query $query) => $query->whereIn($this->getRelatedPivotKeyName(), $ids))
+                ->delete();
+
+            if ($this->parent->firePivotEvent('pivotDiscarded', false, $this->getRelationName(), $draftOnlyIds) === false) {
+                return false;
+            }
         }
 
-        $result = $pivotQuery->delete();
+        // Detach published pivots (fire pivotDetaching/pivotDetached)
+        if (! empty($publishedIds)) {
+            if ($this->parent->firePivotEvent('pivotDetaching', false, $this->getRelationName(), $publishedIds) === false) {
+                return false;
+            }
 
-        if ($this->parent->firePivotEvent('pivotDetached', false, $this->getRelationName(), $idsOnly, $idsAttributes) === false) {
-            return false;
+            $results += parent::newPivotQuery()
+                ->where($shouldDeleteColumn, true)
+                ->where($hasBeenPublishedColumn, true)
+                ->when($ids, fn (Query $query) => $query->whereIn($this->getRelatedPivotKeyName(), $ids))
+                ->delete();
+
+            if ($this->parent->firePivotEvent('pivotDetached', false, $this->getRelationName(), $publishedIds) === false) {
+                return false;
+            }
         }
 
         if ($touch) {
             $this->touchIfTouching();
         }
 
-        return $result;
+        return $results;
     }
 
     /**
@@ -963,6 +865,46 @@ trait HasPublishablePivot
 
         return parent::newPivotQuery()
             ->where(config()->get('publisher.columns.should_delete'), true)
+            ->whereIn($this->getRelatedPivotKeyName(), $ids)
+            ->pluck($this->getRelatedPivotKeyName())
+            ->all();
+    }
+
+    /**
+     * Get IDs of pivots that are NOT marked for deletion.
+     *
+     * Used to filter out no-op operations when calling draftDetach
+     * on pivots that are already marked for deletion.
+     *
+     * @return array<int|string>
+     */
+    protected function getIdsNotMarkedForDeletion(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return parent::newPivotQuery()
+            ->where(config()->get('publisher.columns.should_delete'), false)
+            ->whereIn($this->getRelatedPivotKeyName(), $ids)
+            ->pluck($this->getRelatedPivotKeyName())
+            ->all();
+    }
+
+    /**
+     * Get IDs that already have pivots in the database.
+     *
+     * Used to filter out IDs that shouldn't be attached (already exist).
+     *
+     * @return array<int|string>
+     */
+    protected function getExistingPivotIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        return parent::newPivotQuery()
             ->whereIn($this->getRelatedPivotKeyName(), $ids)
             ->pluck($this->getRelatedPivotKeyName())
             ->all();
