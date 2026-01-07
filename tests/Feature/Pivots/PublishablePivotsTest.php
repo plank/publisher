@@ -815,7 +815,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         expect($posts->first()->pivot->id)->toBe($originalPivotId);
     });
 
-    it('actually deletes draft-only pivots on detach and creates fresh on re-attach', function () {
+    it('marks draft-only pivots for deletion on detach and reattaches the same pivot on re-attach', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -835,18 +835,19 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         expect((bool) $pivot->has_been_published)->toBeFalse();
         $originalPivotId = $pivot->id;
 
-        // Detach (should actually delete draft-only pivot)
+        // Detach marks pivot for deletion (consistent behavior regardless of pivot state)
         $post->featured()->detach([$featured->getKey()]);
 
-        // Verify pivot is actually gone from database (not just marked)
-        $rawCount = \DB::table('post_post')
+        // Verify pivot is marked for deletion, not actually deleted
+        $rawPivot = \DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
-            ->count();
+            ->first();
 
-        expect($rawCount)->toBe(0);
+        expect($rawPivot)->not->toBeNull();
+        expect((bool) $rawPivot->should_delete)->toBeTrue();
 
-        // Re-attach creates a fresh pivot
+        // Re-attach clears the should_delete flag (reattaches the same pivot)
         $post->featured()->attach([$featured->getKey()]);
 
         $posts = $post->featured()->withPivot([
@@ -856,13 +857,13 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         ])->get();
 
         expect($posts)->toHaveCount(1);
-        $newPivot = $posts->first()->pivot;
-        expect($newPivot->id)->not->toBe($originalPivotId); // New record
-        expect((bool) $newPivot->has_been_published)->toBeFalse();
-        expect((bool) $newPivot->should_delete)->toBeFalse();
+        $reattachedPivot = $posts->first()->pivot;
+        expect($reattachedPivot->id)->toBe($originalPivotId); // Same record
+        expect((bool) $reattachedPivot->has_been_published)->toBeFalse();
+        expect((bool) $reattachedPivot->should_delete)->toBeFalse();
     });
 
-    it('creates fresh pivots when repeatedly attaching and detaching draft-only pivots', function () {
+    it('reuses the same pivot record when repeatedly attaching and detaching draft-only pivots', function () {
         /** @var Post $post */
         $post = Post::factory()->create([
             'status' => Status::DRAFT,
@@ -879,16 +880,17 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
             $post->featured()->detach([$featured->getKey()]);
         }
 
-        // All pivot IDs should be different (each attach creates new record)
-        expect(count(array_unique($pivotIds)))->toBe(3);
+        // All pivot IDs should be the SAME (reattaching clears should_delete flag)
+        expect(count(array_unique($pivotIds)))->toBe(1);
 
-        // No pivot records should remain
-        $rawCount = \DB::table('post_post')
+        // One pivot record should remain (marked for deletion)
+        $rawPivot = \DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
-            ->count();
+            ->first();
 
-        expect($rawCount)->toBe(0);
+        expect($rawPivot)->not->toBeNull();
+        expect((bool) $rawPivot->should_delete)->toBeTrue();
     });
 
     it('reattach method clears the should_delete flag', function () {
