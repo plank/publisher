@@ -105,15 +105,24 @@ trait HasPublishablePivot
             return false;
         }
 
+        // Before sync, find which IDs have pivots marked for deletion (these will be reattached, not newly attached)
+        $markedForDeletionBeforeSync = $this->getPivotsMarkedForDeletion($idsOnly);
+
         $parentResult = [];
         $this->parent->withoutEvents(function () use ($ids, $detaching, &$parentResult) {
             $parentResult = parent::sync($ids, $detaching);
         });
 
+        // Separate "attached" results into truly new vs reattached
+        $attached = $parentResult['attached'] ?? [];
+        $reattached = array_values(array_intersect($attached, $markedForDeletionBeforeSync));
+        $trulyNewAttached = array_values(array_diff($attached, $markedForDeletionBeforeSync));
+
         $draftSynced = [
-            'draftAttached' => $parentResult['attached'] ?? [],
+            'draftAttached' => $trulyNewAttached,
             'draftUpdated' => $parentResult['updated'] ?? [],
             'draftDetached' => $parentResult['detached'] ?? [],
+            'reattached' => $reattached,
         ];
 
         if ($this->parent->firePivotEvent('pivotDraftSynced', false, $this->getRelationName(), $draftSynced) === false) {
