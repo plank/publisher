@@ -13,6 +13,13 @@ use Plank\Publisher\Exceptions\DraftException;
  */
 trait HasPublishableAttributes
 {
+    /**
+     * The published attribute values, stored before draft values are synced.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $publishedAttributes = [];
+
     public static function bootHasPublishableAttributes()
     {
         static::retrieved(function (Publishable&Model $model) {
@@ -47,9 +54,74 @@ trait HasPublishableAttributes
     public function syncAttributesFromDraft(): void
     {
         foreach ($this->{$this->draftColumn()} as $key => $value) {
+            $this->publishedAttributes[$key] = $this->attributes[$key];
             $this->attributes[$key] = $value;
             $this->syncOriginalAttribute($key);
         }
+    }
+
+    /**
+     * Get all published attribute values.
+     *
+     * @return array<string, mixed>
+     */
+    public function getPublishedAttributes(): array
+    {
+        if ($this->isPublished()) {
+            return $this->attributesForDraft();
+        }
+
+        $published = [];
+
+        foreach ($this->attributesForDraft() as $key => $value) {
+            $published[$key] = $this->publishedAttributes[$key] ?? $value;
+        }
+
+        return $published;
+    }
+
+    /**
+     * Get a specific published attribute value.
+     */
+    public function getPublishedAttribute(string $key): mixed
+    {
+        if ($this->isPublished()) {
+            return $this->getAttribute($key);
+        }
+
+        if (array_key_exists($key, $this->publishedAttributes)) {
+            return $this->publishedAttributes[$key];
+        }
+
+        return $this->getAttribute($key);
+    }
+
+    /**
+     * Set multiple published attribute values.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function setPublishedAttributes(array $attributes): static
+    {
+        foreach ($attributes as $key => $value) {
+            $this->setPublishedAttribute($key, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set a specific published attribute value.
+     */
+    public function setPublishedAttribute(string $key, mixed $value): static
+    {
+        if ($this->isPublished()) {
+            $this->setAttribute($key, $value);
+        } else {
+            $this->publishedAttributes[$key] = $value;
+        }
+
+        return $this;
     }
 
     public function putAttributesInDraft(): void
@@ -67,7 +139,9 @@ trait HasPublishableAttributes
                 continue;
             }
 
-            if (isset($this->original[$key])) {
+            if (array_key_exists($key, $this->publishedAttributes)) {
+                $this->attributes[$key] = $this->publishedAttributes[$key];
+            } elseif (isset($this->original[$key])) {
                 $this->attributes[$key] = $this->original[$key];
             }
         }
