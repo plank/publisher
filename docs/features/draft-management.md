@@ -168,6 +168,84 @@ $draft = $post->getOriginal('draft');
 $draft = $post->getRawOriginal('draft');
 ```
 
+## Accessing Published Attributes
+
+When working with a draft model (with `Publisher::withDraftContent()` enabled), you may need to read or modify the published values independently from the draft values. Publisher provides methods for this purpose.
+
+### Reading Published Values
+
+```php
+Publisher::withDraftContent(function () {
+    $post = Post::find(1);
+
+    // Normal attribute access returns draft value
+    $post->title; // "Draft Title"
+
+    // Get a specific published attribute
+    $post->getPublishedAttribute('title'); // "Published Title"
+
+    // Get all published attributes
+    $published = $post->getPublishedAttributes();
+    // ['title' => 'Published Title', 'content' => 'Published content...', ...]
+});
+```
+
+### Modifying Published Values
+
+You can modify published values while preserving draft values:
+
+```php
+Publisher::withDraftContent(function () {
+    $post = Post::find(1);
+
+    // Modify the draft value normally
+    $post->title = 'New Draft Title';
+
+    // Modify the published value separately
+    $post->setPublishedAttribute('title', 'New Published Title');
+
+    // Or set multiple published attributes at once
+    $post->setPublishedAttributes([
+        'title' => 'New Published Title',
+        'slug' => 'new-published-slug',
+    ]);
+
+    $post->save();
+
+    // After save:
+    // - Draft column contains: {"title": "New Draft Title", ...}
+    // - Published column contains: "New Published Title"
+});
+```
+
+### Behavior on Published Models
+
+When called on a published model (not in draft state), these methods simply access and modify the regular attributes:
+
+```php
+$post = Post::find(1); // Published model
+
+$post->getPublishedAttribute('title'); // Same as $post->title
+$post->setPublishedAttribute('title', 'New Title'); // Same as $post->title = 'New Title'
+```
+
+### Use Cases
+
+These methods are useful when you need to:
+
+- Update metadata on both published and draft versions simultaneously
+- Sync certain attributes (like `version_id`) across both states
+- Read the "live" published value while editing a draft
+
+```php
+// Example: Update version_id on both published and draft
+if ($model->isNotPublished()) {
+    $model->setPublishedAttribute('version_id', $newVersion->id);
+}
+$model->version_id = $newVersion->id;
+$model->save();
+```
+
 ## Draft Events
 
 The following events fire during draft operations:
