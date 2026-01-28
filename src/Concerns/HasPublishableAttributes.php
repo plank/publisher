@@ -53,10 +53,18 @@ trait HasPublishableAttributes
 
     public function syncAttributesFromDraft(): void
     {
-        foreach ($this->{$this->draftColumn()} as $key => $value) {
-            $this->publishedAttributes[$key] = $this->attributes[$key];
-            $this->attributes[$key] = $value;
-            $this->syncOriginalAttribute($key);
+        $draft = $this->{$this->draftColumn()};
+
+        if ($draft === null) {
+            return;
+        }
+
+        foreach ($draft as $key => $value) {
+            if (array_key_exists($key, $this->attributes)) {
+                $this->publishedAttributes[$key] = $this->attributes[$key];
+                $this->attributes[$key] = $value;
+                $this->syncOriginalAttribute($key);
+            }
         }
     }
 
