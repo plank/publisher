@@ -164,3 +164,144 @@ it('publishes changes queued in draft when published', function () {
     $this->assertEquals('This is the body of my updated post.', $post->body);
     $this->assertNull($post->draft);
 });
+
+it('can get published attribute value from a draft model', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'Published Title',
+        'slug' => 'published-slug',
+        'body' => 'Published body.',
+        'status' => 'draft',
+    ]);
+
+    $post->title = 'Draft Title';
+    $post->save();
+
+    // Draft value via normal accessor
+    $this->assertEquals('Draft Title', $post->title);
+
+    // Published value via getPublishedAttribute
+    $this->assertEquals('Published Title', $post->getPublishedAttribute('title'));
+
+    // Unchanged attributes return current value
+    $this->assertEquals('published-slug', $post->getPublishedAttribute('slug'));
+});
+
+it('can get all published attributes from a draft model', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'Published Title',
+        'slug' => 'published-slug',
+        'body' => 'Published body.',
+        'status' => 'draft',
+    ]);
+
+    $post->title = 'Draft Title';
+    $post->body = 'Draft body.';
+    $post->save();
+
+    $published = $post->getPublishedAttributes();
+
+    $this->assertEquals('Published Title', $published['title']);
+    $this->assertEquals('Published body.', $published['body']);
+    $this->assertEquals('published-slug', $published['slug']);
+});
+
+it('returns regular attributes for getPublishedAttribute on a published model', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'My Title',
+        'slug' => 'my-slug',
+        'body' => 'My body.',
+        'status' => 'published',
+    ]);
+
+    $this->assertEquals('My Title', $post->getPublishedAttribute('title'));
+    $this->assertEquals('my-slug', $post->getPublishedAttribute('slug'));
+});
+
+it('can set a published attribute on a draft model', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'Published Title',
+        'slug' => 'published-slug',
+        'body' => 'Published body.',
+        'status' => 'draft',
+    ]);
+
+    $post->title = 'Draft Title';
+    $post->setPublishedAttribute('title', 'New Published Title');
+    $post->save();
+
+    // Draft value is preserved
+    $this->assertEquals('Draft Title', $post->title);
+
+    // Published value was updated
+    $this->assertEquals('New Published Title', $post->getPublishedAttribute('title'));
+    $this->assertEquals('New Published Title', $post->getRawAttributes()['title']);
+});
+
+it('can set multiple published attributes on a draft model', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'Published Title',
+        'slug' => 'published-slug',
+        'body' => 'Published body.',
+        'status' => 'draft',
+    ]);
+
+    $post->title = 'Draft Title';
+    $post->body = 'Draft body.';
+    $post->setPublishedAttributes([
+        'title' => 'New Published Title',
+        'body' => 'New Published body.',
+    ]);
+    $post->save();
+
+    // Draft values are preserved
+    $this->assertEquals('Draft Title', $post->title);
+    $this->assertEquals('Draft body.', $post->body);
+
+    // Published values were updated
+    $this->assertEquals('New Published Title', $post->getPublishedAttribute('title'));
+    $this->assertEquals('New Published body.', $post->getPublishedAttribute('body'));
+});
+
+it('sets regular attributes when using setPublishedAttribute on a published model', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'My Title',
+        'slug' => 'my-slug',
+        'body' => 'My body.',
+        'status' => 'published',
+    ]);
+
+    $post->setPublishedAttribute('title', 'Updated Title');
+    $post->save();
+
+    $this->assertEquals('Updated Title', $post->title);
+    $this->assertNull($post->draft);
+});
+
+it('persists published attribute changes to the database', function () {
+    $post = Post::factory()->create([
+        'author_id' => User::first()->id,
+        'title' => 'Published Title',
+        'slug' => 'published-slug',
+        'body' => 'Published body.',
+        'status' => 'draft',
+    ]);
+
+    $post->title = 'Draft Title';
+    $post->setPublishedAttribute('title', 'New Published Title');
+    $post->save();
+
+    // Verify in database
+    $fromDb = \Illuminate\Support\Facades\DB::table('posts')
+        ->where('id', $post->id)
+        ->first();
+
+    $this->assertEquals('New Published Title', $fromDb->title);
+    $draft = json_decode($fromDb->draft, true);
+    $this->assertEquals('Draft Title', $draft['title']);
+});

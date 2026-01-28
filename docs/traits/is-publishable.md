@@ -49,6 +49,22 @@ $post->wasDrafted();
 $post->wasUndrafted();
 ```
 
+### Published Attribute Access
+
+Access and modify published values independently from draft values:
+
+```php
+// Get published values (works on both draft and published models)
+$post->getPublishedAttribute('title');
+$post->getPublishedAttributes();
+
+// Set published values (useful for updating both states)
+$post->setPublishedAttribute('version_id', $newVersionId);
+$post->setPublishedAttributes(['version_id' => $newVersionId, 'synced_at' => now()]);
+```
+
+See [Draft Management](../features/draft-management.md#accessing-published-attributes) for detailed usage.
+
 ### Reverting Changes
 
 ```php
