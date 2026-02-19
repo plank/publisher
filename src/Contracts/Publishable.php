@@ -232,8 +232,12 @@ interface Publishable extends PublishableAttributes, PublishableEvents
     public function dependsOnPublishableRelation(): ?string;
 
     /**
-     * Get the Model the foreign key that this Model depends on for
-     * publishing/visibility
+     * Get the foreign key name that this Model depends on for publishing/visibility
      */
     public function dependsOnPublishableForeignKey(): ?string;
+
+    /**
+     * Get the foreign key type that this Model depends on for publishing/visibility
+     */
+    public function dependsOnPublishableForeignKeyMorphType(): ?string;
 }
