@@ -268,6 +268,7 @@ trait HasPublishableAttributes
             $this->hasBeenPublishedColumn(),
             $this->shouldDeleteColumn(),
             $this->dependsOnPublishableForeignKey(),
+            $this->dependsOnPublishableForeignKeyMorphType(),
         ]);
 
         if (in_array(SoftDeletes::class, class_uses_recursive($this))) {

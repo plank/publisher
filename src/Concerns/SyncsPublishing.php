@@ -5,6 +5,7 @@ namespace Plank\Publisher\Concerns;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Collection;
 use Plank\LaravelHush\Concerns\HushesHandlers;
 use Plank\Publisher\Contracts\Publishable;
@@ -182,6 +183,32 @@ trait SyncsPublishing
 
         if ($relation instanceof BelongsTo) {
             return $relation->getForeignKeyName();
+        }
+
+        return null;
+    }
+
+    public function dependsOnPublishableForeignKeyMorphType(): ?string
+    {
+        if (static::$extractingDependsOnPublishableFK) {
+            return null;
+        }
+
+        if ($relation = $this->dependsOnPublishableRelation()) {
+            // Newing up an instance of some relations like MorphTo will new
+            // up an instance of the model, which causes an infinite loop.
+            //
+            // To extract the FK, we add this check to prevent the loop.
+            try {
+                static::$extractingDependsOnPublishableFK = true;
+                $relation = $this->{$relation}();
+            } finally {
+                static::$extractingDependsOnPublishableFK = false;
+            }
+        }
+
+        if ($relation instanceof MorphTo) {
+            return $relation->getMorphType();
         }
 
         return null;
