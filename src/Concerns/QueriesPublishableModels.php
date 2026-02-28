@@ -86,7 +86,7 @@ trait QueriesPublishableModels
         }
 
         return $query->whereNot($this->model->qualifyColumn($this->model->workflowColumn()), $this->model::workflow()::published())
-            ->where($this->model->draftColumn().'->'.$column, $operator, $value, 'and');
+            ->where($this->model->qualifyColumn($this->model->draftColumn()).'->'.$column, $operator, $value, 'and');
     }
 
     protected function shouldUseDraftColumn(string $column): bool
