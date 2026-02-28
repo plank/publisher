@@ -2,6 +2,7 @@
 
 namespace Plank\Publisher\Concerns;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as Query;
 use Plank\LaravelPivotEvents\Traits\FiresPivotEventsTrait;
 use Plank\Publisher\Contracts\Publishable;
@@ -1311,6 +1312,70 @@ trait HasPublishablePivot
     public function orWherePivotNotIn($column, $values)
     {
         return $this->wherePivotNotIn($column, $values, 'or');
+    }
+
+    /**
+     * Add the constraints for a relationship query.
+     *
+     * When the pivot table is already joined in the parent query, we alias
+     * it in the subquery to avoid ambiguous column references.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<*>  $query
+     * @param  \Illuminate\Database\Eloquent\Builder<*>  $parentQuery
+     * @param  array|mixed  $columns
+     * @return \Illuminate\Database\Eloquent\Builder<*>
+     */
+    public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
+    {
+        if ($this->pivotTableIsJoinedOn($parentQuery)) {
+            $table = $this->table;
+            $hash = $this->getRelationCountHash();
+
+            // Swap the pivot table name to the alias so that all qualified
+            // pivot column references (via qualifyPivotColumn) resolve to
+            // the aliased table in the subquery.
+            $this->table = $hash;
+
+            $result = parent::getRelationExistenceQuery($query, $parentQuery, $columns);
+
+            // Fix the join clause to use "original_table as alias" so the
+            // database can resolve the alias to the actual table.
+            foreach ($query->getQuery()->joins ?? [] as $join) {
+                if ($join->table === $hash) {
+                    $join->table = $table.' as '.$hash;
+                    break;
+                }
+            }
+
+            $this->table = $table;
+
+            return $result;
+        }
+
+        return parent::getRelationExistenceQuery($query, $parentQuery, $columns);
+    }
+
+    /**
+     * Determine if the pivot table is already joined on the given query.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<*>  $query
+     */
+    protected function pivotTableIsJoinedOn(Builder $query): bool
+    {
+        foreach ($query->getQuery()->joins ?? [] as $join) {
+            $joinTable = $join->table;
+
+            if (is_string($joinTable)) {
+                // Strip alias if present (e.g., "table as alias")
+                $joinTable = preg_replace('/\s+as\s+\S+$/i', '', $joinTable);
+            }
+
+            if ($joinTable === $this->table) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
