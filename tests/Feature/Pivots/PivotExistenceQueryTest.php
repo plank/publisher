@@ -20,7 +20,7 @@ describe('Relation existence queries when the pivot table is already joined on t
             $postA->featured()->attach($postB->getKey());
             $postB->featured()->attach($postC->getKey());
 
-            // query with a join on the pivot table, then add a relationship existence 
+            // query with a join on the pivot table, then add a relationship existence
             // check. Without the fix, getRelationExistenceQuery() joins the same pivot
             // table again without an alias, causing ambiguous column references.
             $query = Post::query()
