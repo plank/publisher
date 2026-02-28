@@ -416,7 +416,6 @@ trait HasPublishablePivot
     {
         /** @var Query $pivotQuery */
         $pivotQuery = parent::newPivotQuery()
-            ->where(config()->get('publisher.columns.should_delete'), true)
             ->when($ids, fn (Query $query) => $query->whereIn(
                 $this->getRelatedPivotKeyName(),
                 $ids,
