@@ -5,6 +5,8 @@ namespace Plank\Publisher\Contracts;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Plank\Publisher\Relations\PublishableBelongsToMany;
+use Plank\Publisher\Relations\PublishableMorphToMany;
 
 interface Publishable extends PublishableAttributes, PublishableEvents
 {
@@ -141,13 +143,13 @@ interface Publishable extends PublishableAttributes, PublishableEvents
      * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
      *
      * @param  class-string<TRelatedModel>  $related
-     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>|null  $table
+     * @param  string|class-string<Model>|null  $table
      * @param  string|null  $foreignPivotKey
      * @param  string|null  $relatedPivotKey
      * @param  string|null  $parentKey
      * @param  string|null  $relatedKey
      * @param  string|null  $relation
-     * @return \Plank\Publisher\Relations\PublishableBelongsToMany<TRelatedModel, $this>
+     * @return PublishableBelongsToMany<TRelatedModel, $this>
      */
     public function publishableBelongsToMany(
         $related,
@@ -173,7 +175,7 @@ interface Publishable extends PublishableAttributes, PublishableEvents
      * @param  string|null  $relatedKey
      * @param  string|null  $relation
      * @param  bool  $inverse
-     * @return \Plank\Publisher\Relations\PublishableMorphToMany<TRelatedModel, $this>
+     * @return PublishableMorphToMany<TRelatedModel, $this>
      */
     public function publishableMorphToMany(
         $related,

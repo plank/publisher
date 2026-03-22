@@ -15,9 +15,9 @@ trait InteractsWithPublishableContent
      * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
      * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
+     * @param  Builder<TRelatedModel>  $query
      * @param  TDeclaringModel  $parent
-     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>  $table
+     * @param  string|class-string<Model>  $table
      * @param  string  $foreignPivotKey
      * @param  string  $relatedPivotKey
      * @param  string  $parentKey
@@ -53,7 +53,7 @@ trait InteractsWithPublishableContent
      * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
      * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
+     * @param  Builder<TRelatedModel>  $query
      * @param  TDeclaringModel  $parent
      * @param  string  $name
      * @param  string  $table

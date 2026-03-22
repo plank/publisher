@@ -21,7 +21,7 @@ it('aborts the install when you dont confirm', function () {
         ->expectsConfirmation('⚠️ Please ensure you have added the \Plank\Publisher\Contracts\Publishable interface to the models you wish to be publishable. Continue?', 'no');
 
     expect(file_exists(config_path('publisher.php')))->toBeFalse();
-})->throws(\Exception::class, 'Installation aborted.');
+})->throws(Exception::class, 'Installation aborted.');
 
 it('publishes the config file when confirmed', function () {
     File::delete(config_path('publisher.php'));

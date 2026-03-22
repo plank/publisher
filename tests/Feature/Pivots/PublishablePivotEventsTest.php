@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Media;
@@ -589,7 +590,7 @@ describe('Pivot Flush Events', function () {
         $post->featured()->detach([$featured->getKey()]);
         $post->featured()->flush([$featured->getKey()]);
 
-        $count = \Illuminate\Support\Facades\DB::table('post_post')
+        $count = DB::table('post_post')
             ->where('post_id', $post->getKey())
             ->where('featured_id', $featured->getKey())
             ->count();

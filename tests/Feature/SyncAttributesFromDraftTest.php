@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
@@ -21,7 +22,7 @@ describe('syncAttributesFromDraft handles edge cases gracefully', function () {
 
         // Manually set a draft with an extra key that doesn't exist in the model's attributes
         // This simulates data corruption, manual DB edits, or schema changes
-        \Illuminate\Support\Facades\DB::table('posts')
+        DB::table('posts')
             ->where('id', $post->id)
             ->update([
                 'status' => 'draft',
@@ -102,7 +103,7 @@ describe('syncAttributesFromDraft handles edge cases gracefully', function () {
         ]);
 
         // Inject a malformed draft directly into the database
-        \Illuminate\Support\Facades\DB::table('posts')
+        DB::table('posts')
             ->where('id', $post->id)
             ->update([
                 'status' => 'draft',
@@ -138,7 +139,7 @@ describe('syncAttributesFromDraft expected behavior', function () {
 
         // Manually set a draft that's missing some attributes that exist in the model
         // This simulates a scenario where a new column was added to the table after the draft was created
-        \Illuminate\Support\Facades\DB::table('posts')
+        DB::table('posts')
             ->where('id', $post->id)
             ->update([
                 'status' => 'draft',

@@ -2,6 +2,7 @@
 
 namespace Plank\Publisher\Concerns;
 
+use Illuminate\Database\Eloquent\Builder;
 use Plank\Publisher\Facades\Publisher;
 
 trait DisablesDraftQueryForPivot
@@ -28,7 +29,7 @@ trait DisablesDraftQueryForPivot
      * The "child" method is for supporting older Laravel versions that call
      * `performJoin($query)`, while newer versions call `addJoinClause($query)`.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Builder  $query
      * @return $this
      */
     protected function performJoin($query = null)
