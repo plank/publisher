@@ -17,6 +17,10 @@ class Post extends TestModel implements Publishable
 {
     use IsPublishable;
 
+    protected $casts = [
+        'metadata' => 'array',
+    ];
+
     protected array $publishingDependents = ['sections'];
 
     /**
