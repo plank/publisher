@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
@@ -35,7 +36,7 @@ describe('Repeated draftAttach/draftDetach cycles on draft-only pivot', function
         $tracker->assertOnly(['pivotDraftDetaching', 'pivotDraftDetached']);
 
         // Verify pivot is marked for deletion
-        $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+        $pivot = DB::table('post_post')
             ->where('post_id', $post->getKey())
             ->where('featured_id', $featured->getKey())
             ->first();
@@ -59,7 +60,7 @@ describe('Repeated draftAttach/draftDetach cycles on draft-only pivot', function
         $post->featured()->attach([$featured->getKey()]);
 
         // Final state: pivot should exist and not be marked for deletion
-        $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+        $pivot = DB::table('post_post')
             ->where('post_id', $post->getKey())
             ->where('featured_id', $featured->getKey())
             ->first();
@@ -102,7 +103,7 @@ describe('Repeated draftAttach/draftDetach cycles on published pivot', function 
         $tracker->assertOnly(['pivotReattaching', 'pivotReattached']);
 
         // Verify pivot state
-        $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+        $pivot = DB::table('post_post')
             ->where('post_id', $post->getKey())
             ->where('featured_id', $featured->getKey())
             ->first();
@@ -194,7 +195,7 @@ describe('Parent state transitions with pivot cycles', function () {
         expect($tracker->firedEvents)->toContain('pivotDetached');
 
         // Verify pivot is gone
-        $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+        $pivot = DB::table('post_post')
             ->where('post_id', $post->getKey())
             ->where('featured_id', $featured->getKey())
             ->first();
@@ -250,7 +251,7 @@ describe('Parent state transitions with pivot cycles', function () {
         expect($tracker->firedEvents)->toContain('pivotDiscarded');
 
         // Pivot should be gone
-        $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+        $pivot = DB::table('post_post')
             ->where('post_id', $post->getKey())
             ->where('featured_id', $featured->getKey())
             ->first();

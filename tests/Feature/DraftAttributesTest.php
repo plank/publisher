@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 use Plank\Publisher\Tests\Helpers\Models\User;
@@ -297,7 +298,7 @@ it('persists published attribute changes to the database', function () {
     $post->save();
 
     // Verify in database
-    $fromDb = \Illuminate\Support\Facades\DB::table('posts')
+    $fromDb = DB::table('posts')
         ->where('id', $post->id)
         ->first();
 
