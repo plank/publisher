@@ -2,7 +2,11 @@
 
 namespace Plank\Publisher\Concerns;
 
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Query\Builder as Query;
 use Plank\LaravelPivotEvents\Traits\FiresPivotEventsTrait;
 use Plank\Publisher\Contracts\Publishable;
@@ -10,8 +14,8 @@ use Plank\Publisher\Exceptions\PivotException;
 use Plank\Publisher\Facades\Publisher;
 
 /**
- * @mixin \Illuminate\Database\Eloquent\Relations\BelongsToMany
- * @mixin \Illuminate\Database\Eloquent\Relations\MorphToMany
+ * @mixin BelongsToMany
+ * @mixin MorphToMany
  */
 trait HasPublishablePivot
 {
@@ -43,7 +47,7 @@ trait HasPublishablePivot
     /**
      * Create a new existing pivot model instance.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\Pivot
+     * @return Pivot
      */
     public function newExistingPivot(array $attributes = [])
     {
@@ -704,7 +708,7 @@ trait HasPublishablePivot
     /**
      * Create a new query builder for the pivot table.
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return Query
      */
     public function newPivotQuery()
     {
@@ -923,7 +927,7 @@ trait HasPublishablePivot
      * Get the current pivot record for an ID.
      *
      * @param  mixed  $id
-     * @return \Illuminate\Database\Eloquent\Relations\Pivot|null
+     * @return Pivot|null
      */
     protected function getCurrentPivotForId($id)
     {
@@ -1076,7 +1080,7 @@ trait HasPublishablePivot
     /**
      * Add a "where pivot" clause to the query.
      *
-     * @param  \Illuminate\Contracts\Database\Query\Expression|string  $column
+     * @param  Expression|string  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
@@ -1280,7 +1284,7 @@ trait HasPublishablePivot
     /**
      * Add an "or where pivot" clause to the query.
      *
-     * @param  \Illuminate\Contracts\Database\Query\Expression|string  $column
+     * @param  Expression|string  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -1384,7 +1388,7 @@ trait HasPublishablePivot
      * Wraps the parent implementation in withoutDraftContent to prevent
      * draft-aware query logic from being applied to the morph type constraint.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Builder  $query
      * @return $this
      */
     protected function performJoin($query = null)

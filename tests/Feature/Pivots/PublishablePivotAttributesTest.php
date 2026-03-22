@@ -2,6 +2,7 @@
 
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
+use Plank\Publisher\Tests\Helpers\Models\Media;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 
 describe('Publishable pivot attributes can be stored in draft state', function () {
@@ -244,7 +245,7 @@ describe('Publishable pivot attributes work with morph pivots', function () {
             'status' => Status::PUBLISHED,
         ]);
 
-        $media = \Plank\Publisher\Tests\Helpers\Models\Media::factory()->create();
+        $media = Media::factory()->create();
 
         // Attach while published
         $post->media()->attach([$media->getKey()], ['order' => 1]);
@@ -371,7 +372,7 @@ describe('Publishable pivot attributes work with custom pivot models', function 
             'status' => Status::PUBLISHED,
         ]);
 
-        $media = \Plank\Publisher\Tests\Helpers\Models\Media::factory()->create();
+        $media = Media::factory()->create();
 
         // Attach while published using the custom morph pivot relation
         $post->customMedia()->attach([$media->getKey()], ['order' => 1]);

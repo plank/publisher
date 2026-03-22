@@ -99,13 +99,13 @@ trait HasPublishableRelationships
      * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
      *
      * @param  class-string<TRelatedModel>  $related
-     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>|null  $table
+     * @param  string|class-string<Model>|null  $table
      * @param  string|null  $foreignPivotKey
      * @param  string|null  $relatedPivotKey
      * @param  string|null  $parentKey
      * @param  string|null  $relatedKey
      * @param  string|null  $relation
-     * @return \Plank\Publisher\Relations\PublishableBelongsToMany<TRelatedModel, $this>
+     * @return PublishableBelongsToMany<TRelatedModel, $this>
      */
     public function publishableBelongsToMany(
         $related,
@@ -157,15 +157,15 @@ trait HasPublishableRelationships
      * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
      * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
+     * @param  Builder<TRelatedModel>  $query
      * @param  TDeclaringModel  $parent
-     * @param  string|class-string<\Illuminate\Database\Eloquent\Model>  $table
+     * @param  string|class-string<Model>  $table
      * @param  string  $foreignPivotKey
      * @param  string  $relatedPivotKey
      * @param  string  $parentKey
      * @param  string  $relatedKey
      * @param  string|null  $relationName
-     * @return \Plank\Publisher\Relations\PublishableBelongsToMany<TRelatedModel, TDeclaringModel>
+     * @return PublishableBelongsToMany<TRelatedModel, TDeclaringModel>
      */
     protected function newPublishableBelongsToMany(
         Builder $query,
@@ -203,7 +203,7 @@ trait HasPublishableRelationships
      * @param  string|null  $relatedKey
      * @param  string|null  $relation
      * @param  bool  $inverse
-     * @return \Plank\Publisher\Relations\PublishableMorphToMany<TRelatedModel, $this>
+     * @return PublishableMorphToMany<TRelatedModel, $this>
      */
     public function publishableMorphToMany(
         $related,
@@ -258,7 +258,7 @@ trait HasPublishableRelationships
      * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
      * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<TRelatedModel>  $query
+     * @param  Builder<TRelatedModel>  $query
      * @param  TDeclaringModel  $parent
      * @param  string  $name
      * @param  string  $table
@@ -268,7 +268,7 @@ trait HasPublishableRelationships
      * @param  string  $relatedKey
      * @param  string|null  $relationName
      * @param  bool  $inverse
-     * @return \Plank\Publisher\Relations\PublishableMorphToMany<TRelatedModel, TDeclaringModel>
+     * @return PublishableMorphToMany<TRelatedModel, TDeclaringModel>
      */
     protected function newPublishableMorphToMany(
         Builder $query,
