@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('slug');
             $table->text('teaser');
             $table->text('body');
+            $table->json('metadata')->nullable();
             $table->string('status');
             $table->boolean('has_been_published')->default(false);
             $table->json('draft')->nullable();

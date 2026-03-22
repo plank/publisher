@@ -76,13 +76,20 @@ trait HasPublishableAttributes
     public function getPublishedAttributes(): array
     {
         if ($this->isPublished()) {
-            return $this->attributesForDraft();
+            $published = [];
+
+            foreach ($this->attributesForDraft() as $key => $value) {
+                $published[$key] = $this->transformModelValue($key, $value);
+            }
+
+            return $published;
         }
 
         $published = [];
 
         foreach ($this->attributesForDraft() as $key => $value) {
-            $published[$key] = $this->publishedAttributes[$key] ?? $value;
+            $raw = $this->publishedAttributes[$key] ?? $value;
+            $published[$key] = $this->transformModelValue($key, $raw);
         }
 
         return $published;
@@ -98,7 +105,7 @@ trait HasPublishableAttributes
         }
 
         if (array_key_exists($key, $this->publishedAttributes)) {
-            return $this->publishedAttributes[$key];
+            return $this->transformModelValue($key, $this->publishedAttributes[$key]);
         }
 
         return $this->getAttribute($key);
@@ -126,7 +133,19 @@ trait HasPublishableAttributes
         if ($this->isPublished()) {
             $this->setAttribute($key, $value);
         } else {
-            $this->publishedAttributes[$key] = $value;
+            $previous = $this->attributes[$key] ?? null;
+            $existed = array_key_exists($key, $this->attributes);
+
+            $this->setAttribute($key, $value);
+            $this->publishedAttributes[$key] = $this->attributes[$key];
+
+            if ($existed) {
+                $this->attributes[$key] = $previous;
+            } else {
+                unset($this->attributes[$key]);
+            }
+
+            unset($this->classCastCache[$key], $this->attributeCastCache[$key]);
         }
 
         return $this;
