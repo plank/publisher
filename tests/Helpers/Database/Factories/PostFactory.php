@@ -23,6 +23,7 @@ class PostFactory extends Factory
             'slug' => (string) str($title)->slug(),
             'teaser' => $this->faker->paragraphs(1, true),
             'body' => $this->faker->paragraphs($this->faker->numberBetween(1, 5), true),
+            'metadata' => null,
         ];
 
         return [
