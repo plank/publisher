@@ -839,7 +839,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         $post->featured()->detach([$featured->getKey()]);
 
         // Verify pivot is marked for deletion, not actually deleted
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();
@@ -884,7 +884,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         expect(count(array_unique($pivotIds)))->toBe(1);
 
         // One pivot record should remain (marked for deletion)
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();
@@ -922,7 +922,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         $post->featured()->detach([$featured->getKey()]);
 
         // Verify pivot is marked for deletion in raw database
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();
@@ -936,7 +936,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         expect($reattachedCount)->toBe(1);
 
         // Verify should_delete flag is cleared
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();
@@ -988,7 +988,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         $post->featured()->detach([$featured->getKey()]);
 
         // Verify pivot is marked for deletion but has_been_published is still true
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();
@@ -1002,7 +1002,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         expect($reattachedCount)->toBe(1);
 
         // Verify should_delete is now false
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();
@@ -1015,7 +1015,7 @@ describe('Attach/detach/re-attach cycles on publishable pivots', function () {
         $post->save();
 
         // Verify pivot still exists after publishing
-        $rawPivot = \DB::table('post_post')
+        $rawPivot = DB::table('post_post')
             ->where('post_id', $post->id)
             ->where('featured_id', $featured->id)
             ->first();

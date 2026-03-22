@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
@@ -21,7 +22,7 @@ it('sync reattaches a previously draft-detached pivot on a never-published paren
     $post->featured()->detach([$featured->getKey()]);
 
     // Verify pivot is marked for deletion
-    $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+    $pivot = DB::table('post_post')
         ->where('post_id', $post->getKey())
         ->where('featured_id', $featured->getKey())
         ->first();
@@ -40,7 +41,7 @@ it('sync reattaches a previously draft-detached pivot on a never-published paren
     expect($result['draftAttached'])->toBeEmpty();
 
     // Verify pivot state is correct
-    $pivot = \Illuminate\Support\Facades\DB::table('post_post')
+    $pivot = DB::table('post_post')
         ->where('post_id', $post->getKey())
         ->where('featured_id', $featured->getKey())
         ->first();
