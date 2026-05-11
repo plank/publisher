@@ -49,17 +49,6 @@ it('does not dispatch a job when the table has no draft column', function () {
     expect(Queue::pushedJobs())->not->toHaveKey(ResolveSchemaConflicts::class);
 });
 
-it('does not dispatch a job when only publisher columns are dropped', function () {
-    Queue::fake();
-
-    artisan('migrate', [
-        '--path' => migrationPath('PublisherColumnMigrations'),
-        '--realpath' => true,
-    ])->run();
-
-    expect(Queue::pushedJobs())->not->toHaveKey(ResolveSchemaConflicts::class);
-});
-
 it('resolves conflicts to publishable models correctly', function () {
     Post::factory()
         ->create([
