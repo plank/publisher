@@ -62,6 +62,10 @@ class ResolveSchemaConflicts implements ShouldQueue
 
     protected function resolveRenamed(object $row, string $from, string $to): void
     {
+        if (! property_exists($row, $from)) {
+            return;
+        }
+
         $data = $row->{$from};
         unset($row->{$from});
         $row->{$to} = $data;
