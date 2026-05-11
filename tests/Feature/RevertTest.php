@@ -335,6 +335,156 @@ describe('Revert with publishable MorphToMany pivots', function () {
         expect((bool) $restoredMedia->pivot->should_delete)->toBeFalse();
     });
 
+    it('reverts sync changes to morph pivots', function () {
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $originalMedia = Media::factory()->create();
+        $newMedia = Media::factory()->create();
+
+        // Attach original while published
+        $post->media()->attach([$originalMedia->getKey()]);
+
+        // Unpublish and sync to new media
+        $post->update(['status' => 'draft']);
+        $post->media()->sync([$newMedia->getKey()]);
+
+        // In draft mode, we have only newMedia visible
+        $media = $post->media()->get();
+        expect($media)->toHaveCount(1);
+        expect($media->first()->id)->toBe($newMedia->id);
+
+        // Revert should restore original and remove new
+        $post->revert();
+
+        $media = $post->media()->get();
+        expect($media)->toHaveCount(1);
+        expect($media->first()->id)->toBe($originalMedia->id);
+    });
+
+    it('reverts morph pivot attribute changes when reverting', function () {
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $media = Media::factory()->create();
+
+        // Attach while published with specific pivot attributes
+        $post->media()->attach([$media->getKey() => ['collection' => 'photos', 'order' => 1]]);
+
+        $pivot = $post->media()->withPivot(['collection', 'order'])->first()->pivot;
+        expect($pivot->collection)->toBe('photos');
+        expect((int) $pivot->order)->toBe(1);
+
+        // Unpublish and update pivot attributes
+        $post->update(['status' => 'draft']);
+        $post->media()->updateExistingPivot($media->getKey(), ['collection' => 'drawings', 'order' => 5]);
+
+        // Verify draft values are applied
+        $draftPivot = $post->media()->withPivot(['collection', 'order'])->first()->pivot;
+        expect($draftPivot->collection)->toBe('drawings');
+        expect((int) $draftPivot->order)->toBe(5);
+
+        // Revert should restore original pivot attributes
+        $post->revert();
+
+        $revertedPivot = $post->media()->withPivot(['collection', 'order'])->first()->pivot;
+        expect($revertedPivot)->not->toBeNull();
+        expect($revertedPivot->collection)->toBe('photos');
+        expect((int) $revertedPivot->order)->toBe(1);
+    });
+
+    it('reverts complex morph pivot sync with mixed attach detach and update', function () {
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $mediaA = Media::factory()->create();
+        $mediaB = Media::factory()->create();
+
+        // Attach both while published
+        $post->media()->attach([
+            $mediaA->getKey() => ['collection' => 'photos', 'order' => 1],
+            $mediaB->getKey() => ['collection' => 'photos', 'order' => 2],
+        ]);
+
+        expect($post->media()->get())->toHaveCount(2);
+
+        // Unpublish and sync to a different set (removes A, keeps B, adds C)
+        $post->update(['status' => 'draft']);
+
+        $mediaC = Media::factory()->create();
+        $post->media()->sync([
+            $mediaB->getKey() => ['collection' => 'drawings', 'order' => 1],
+            $mediaC->getKey() => ['collection' => 'drawings', 'order' => 2],
+        ]);
+
+        $draftMedia = $post->media()->withPivot(['collection', 'order'])->get();
+        expect($draftMedia)->toHaveCount(2);
+        expect($draftMedia->pluck('id')->sort()->values()->all())->toBe(
+            collect([$mediaB->id, $mediaC->id])->sort()->values()->all()
+        );
+
+        // Revert should restore A and B with original attributes, remove C
+        $post->revert();
+
+        $revertedMedia = $post->media()->withPivot(['collection', 'order'])->get()->sortBy('pivot.order');
+        expect($revertedMedia)->toHaveCount(2);
+        expect($revertedMedia->pluck('id')->sort()->values()->all())->toBe(
+            collect([$mediaA->id, $mediaB->id])->sort()->values()->all()
+        );
+
+        $pivotA = $revertedMedia->firstWhere('id', $mediaA->id)->pivot;
+        expect($pivotA->collection)->toBe('photos');
+        expect((int) $pivotA->order)->toBe(1);
+
+        $pivotB = $revertedMedia->firstWhere('id', $mediaB->id)->pivot;
+        expect($pivotB->collection)->toBe('photos');
+        expect((int) $pivotB->order)->toBe(2);
+    });
+
+    it('reverts morph pivots after multiple publish-draft cycles', function () {
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $mediaA = Media::factory()->create();
+
+        // First publish cycle: attach Media A
+        $post->media()->attach([$mediaA->getKey() => ['collection' => 'photos', 'order' => 1]]);
+
+        // Go to draft, sync to Media B, then publish again
+        $post->update(['status' => 'draft']);
+        $mediaB = Media::factory()->create();
+        $post->media()->sync([$mediaB->getKey() => ['collection' => 'drawings', 'order' => 1]]);
+
+        // Publish (this flushes A, publishes B)
+        $post->update(['status' => 'published']);
+
+        $media = $post->media()->get();
+        expect($media)->toHaveCount(1);
+        expect($media->first()->id)->toBe($mediaB->id);
+
+        // Second draft cycle: sync to Media C
+        $post->update(['status' => 'draft']);
+        $mediaC = Media::factory()->create();
+        $post->media()->sync([$mediaC->getKey() => ['collection' => 'icons', 'order' => 1]]);
+
+        $draftMedia = $post->media()->get();
+        expect($draftMedia)->toHaveCount(1);
+        expect($draftMedia->first()->id)->toBe($mediaC->id);
+
+        // Revert should restore to the last published state (Media B only)
+        $post->revert();
+
+        $revertedMedia = $post->media()->withPivot(['collection', 'order'])->get();
+        expect($revertedMedia)->toHaveCount(1);
+        expect($revertedMedia->first()->id)->toBe($mediaB->id);
+        expect($revertedMedia->first()->pivot->collection)->toBe('drawings');
+        expect((int) $revertedMedia->first()->pivot->order)->toBe(1);
+    });
+
     it('handles mixed draft and published morph pivots correctly when reverting', function () {
         $post = Post::factory()->create([
             'status' => Status::PUBLISHED,
@@ -396,6 +546,41 @@ describe('Revert with custom pivot classes', function () {
         $post->revert();
 
         expect($post->customFeatured()->get())->toBeEmpty();
+    });
+
+    it('reverts sync changes to custom morph pivots when reverting', function () {
+        $post = Post::factory()->create([
+            'status' => Status::PUBLISHED,
+        ]);
+
+        $originalMedia = Media::factory()->create();
+        $newMedia = Media::factory()->create();
+
+        // Attach original while published
+        $post->customMedia()->attach([$originalMedia->getKey()]);
+
+        $pivot = $post->customMedia()->withPivot([
+            'has_been_published',
+            'should_delete',
+        ])->first()->pivot;
+
+        expect((bool) $pivot->has_been_published)->toBeTrue();
+
+        // Unpublish and sync to new media
+        $post->update(['status' => 'draft']);
+        $post->customMedia()->sync([$newMedia->getKey()]);
+
+        // In draft mode, we have only newMedia visible
+        $media = $post->customMedia()->get();
+        expect($media)->toHaveCount(1);
+        expect($media->first()->id)->toBe($newMedia->id);
+
+        // Revert should restore original and remove new
+        $post->revert();
+
+        $media = $post->customMedia()->get();
+        expect($media)->toHaveCount(1);
+        expect($media->first()->id)->toBe($originalMedia->id);
     });
 
     it('deletes draft-only custom morph pivots when reverting', function () {
