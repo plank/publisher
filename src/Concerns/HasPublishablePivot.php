@@ -728,6 +728,30 @@ trait HasPublishablePivot
     public function withoutPublisherPivotConstraints() {}
 
     /**
+     * Set the constraints for an eager load of the relation.
+     *
+     * @return void
+     */
+    public function addEagerConstraints(array $models)
+    {
+        parent::addEagerConstraints($models);
+
+        if (Publisher::draftPivotConstraintsRestricted()) {
+            return;
+        }
+
+        if (Publisher::draftContentAllowed()) {
+            $this->query->where(
+                $this->qualifyPivotColumn(config()->get('publisher.columns.should_delete')), false
+            );
+        } else {
+            $this->query->where(
+                $this->qualifyPivotColumn(config()->get('publisher.columns.has_been_published')), true
+            );
+        }
+    }
+
+    /**
      * Set the where clause for the relation query.
      *
      * @return $this
