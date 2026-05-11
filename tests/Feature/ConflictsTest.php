@@ -17,14 +17,16 @@ it('handles conflicting changes to publishable model schemas', function () {
 
     $jobs = Queue::pushedJobs()[ResolveSchemaConflicts::class];
 
-    expect($jobs)->toHaveCount(2);
+    expect($jobs)->toHaveCount(3);
 
     expect($jobs[0]['job']->renamed)->toContain([
         'from' => 'teaser',
         'to' => 'blurb',
     ]);
 
-    expect($jobs[1]['job']->dropped)->toContain('subtitle');
+    expect($jobs[1]['job']->dropped)->toContain('body');
+
+    expect($jobs[2]['job']->dropped)->toContain('subtitle');
 });
 
 it('does not dispatch a job when only publisher columns are dropped', function () {
