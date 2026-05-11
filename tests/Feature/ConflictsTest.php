@@ -17,7 +17,7 @@ it('handles conflicting changes to publishable model schemas', function () {
 
     $jobs = Queue::pushedJobs()[ResolveSchemaConflicts::class];
 
-    expect($jobs)->toHaveCount(4);
+    expect($jobs)->toHaveCount(2);
 
     expect($jobs[0]['job']->renamed)->toContain([
         'from' => 'teaser',
@@ -25,13 +25,28 @@ it('handles conflicting changes to publishable model schemas', function () {
     ]);
 
     expect($jobs[1]['job']->dropped)->toContain('subtitle');
+});
 
-    expect($jobs[2]['job']->renamed)->toContain([
-        'from' => 'body',
-        'to' => 'message',
-    ]);
+it('does not dispatch a job when only publisher columns are dropped', function () {
+    Queue::fake();
 
-    expect($jobs[3]['job']->dropped)->toContain('name');
+    artisan('migrate', [
+        '--path' => migrationPath('PublisherColumnMigrations'),
+        '--realpath' => true,
+    ])->run();
+
+    expect(Queue::pushedJobs())->not->toHaveKey(ResolveSchemaConflicts::class);
+});
+
+it('does not dispatch a job when the table has no draft column', function () {
+    Queue::fake();
+
+    artisan('migrate', [
+        '--path' => migrationPath('NoDraftColumnMigrations'),
+        '--realpath' => true,
+    ])->run();
+
+    expect(Queue::pushedJobs())->not->toHaveKey(ResolveSchemaConflicts::class);
 });
 
 it('does not dispatch a job when only publisher columns are dropped', function () {
