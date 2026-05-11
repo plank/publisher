@@ -3,6 +3,7 @@
 namespace Plank\Publisher\Listeners;
 
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 use Plank\LaravelSchemaEvents\Events\TableChanged;
 use Plank\Publisher\Jobs\ResolveSchemaConflicts;
 
@@ -13,6 +14,10 @@ class HandleSchemaConflicts
         $publisherColumns = $this->publisherColumns();
 
         if ($event->droppedColumns->contains($publisherColumns['draft'])) {
+            return;
+        }
+
+        if (! Schema::hasColumn($event->table, $publisherColumns['draft'])) {
             return;
         }
 
