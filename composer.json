@@ -21,7 +21,7 @@
         "plank/before-and-after-model-events": "^13.0",
         "plank/laravel-hush": "^13.1",
         "plank/laravel-model-resolver": "^13",
-        "plank/laravel-pivot-events": "^13.0",
+        "plank/laravel-pivot-events": "^13",
         "plank/laravel-schema-events": "^13",
         "spatie/laravel-package-tools": "^1.16"
     },
