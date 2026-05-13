@@ -17,6 +17,8 @@ class PublisherService
 
     protected bool $draftPivotConstraints = true;
 
+    protected bool $publisherScopeEnabled = true;
+
     public function shouldEnableDraftContent(Request $request): bool
     {
         if (Gate::has('view-draft-content') && $this->shouldCheckGate() && Gate::denies('view-draft-content')) {
@@ -146,6 +148,52 @@ class PublisherService
             return $closure();
         } finally {
             $this->draftPivotConstraints = $pivotConstraintsState;
+        }
+    }
+
+    public function publisherScopeEnabled(): bool
+    {
+        return $this->publisherScopeEnabled;
+    }
+
+    public function publisherScopeDisabled(): bool
+    {
+        return ! $this->publisherScopeEnabled;
+    }
+
+    public function enablePublisherScope(): void
+    {
+        $this->publisherScopeEnabled = true;
+    }
+
+    public function disablePublisherScope(): void
+    {
+        $this->publisherScopeEnabled = false;
+    }
+
+    public function withPublisherScope(Closure $closure): mixed
+    {
+        $scopeState = $this->publisherScopeEnabled;
+
+        try {
+            $this->publisherScopeEnabled = true;
+
+            return $closure();
+        } finally {
+            $this->publisherScopeEnabled = $scopeState;
+        }
+    }
+
+    public function withoutPublisherScope(Closure $closure): mixed
+    {
+        $scopeState = $this->publisherScopeEnabled;
+
+        try {
+            $this->publisherScopeEnabled = false;
+
+            return $closure();
+        } finally {
+            $this->publisherScopeEnabled = $scopeState;
         }
     }
 

@@ -25,6 +25,12 @@ use Plank\Publisher\Contracts\Publishable;
  * @method static void restrictDraftPivotConstraints(): void
  * @method static mixed withDraftPivotConstraints(Closure $closure): mixed
  * @method static mixed withoutDraftPivotConstraints(Closure $closure): mixed
+ * @method static bool publisherScopeEnabled(): bool
+ * @method static bool publisherScopeDisabled(): bool
+ * @method static void enablePublisherScope(): void
+ * @method static void disablePublisherScope(): void
+ * @method static mixed withPublisherScope(Closure $closure): mixed
+ * @method static mixed withoutPublisherScope(Closure $closure): mixed
  * @method static Collection<Model&Publishable> publishableModels()
  */
 class Publisher extends Facade
