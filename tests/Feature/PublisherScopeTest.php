@@ -121,9 +121,9 @@ describe('PublisherScope can be disabled', function () {
 
         try {
             Publisher::withoutPublisherScope(function () {
-                throw new \RuntimeException('boom');
+                throw new RuntimeException('boom');
             });
-        } catch (\RuntimeException) {
+        } catch (RuntimeException) {
             // swallow
         }
 
