@@ -16,6 +16,10 @@ class PublisherScope implements Scope
             return;
         }
 
+        if (Publisher::publisherScopeDisabled()) {
+            return;
+        }
+
         if (Publisher::draftContentRestricted()) {
             $builder->onlyPublished();
         } else {
