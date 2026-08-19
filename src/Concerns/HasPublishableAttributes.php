@@ -184,6 +184,10 @@ trait HasPublishableAttributes
         );
 
         foreach ($this->attributes as $key => $value) {
+            if ($this->isShadowedByProperty($key)) {
+                continue;
+            }
+
             if ($this->ignoreCounts() && $this->isCount($key)) {
                 continue;
             }
@@ -207,6 +211,18 @@ trait HasPublishableAttributes
         }
 
         return true;
+    }
+
+    protected function isShadowedByProperty(string $key): bool
+    {
+        if (! property_exists($this, $key)) {
+            return false;
+        }
+
+        $property = new \ReflectionProperty($this, $key);
+
+        return $property->isPublic()
+            && $property->getDeclaringClass()->getName() !== Model::class;
     }
 
     protected function isCount(string $key): bool
