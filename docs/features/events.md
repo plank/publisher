@@ -169,14 +169,16 @@ static::pivotDraftSyncing(function ($post, $relation, $ids, $attributes) {
     // $attributes: array of ID => attributes
 });
 
-static::pivotDraftSynced(function ($post, $relation, $changes) {
+static::pivotDraftSynced(function ($post, $relation, $changes, $attributes) {
     // After sync in draft mode
     // $changes contains:
     // [
     //     'draftAttached' => [1, 2],    // IDs of newly attached pivots
     //     'draftUpdated' => [3],         // IDs of updated pivots
     //     'draftDetached' => [4, 5],     // IDs of detached pivots
+    //     'reattached' => [6],           // IDs of pivots restored after a draft detach
     // ]
+    // $attributes: array of ID => attributes for the attached, updated and reattached pivots
 });
 ```
 
