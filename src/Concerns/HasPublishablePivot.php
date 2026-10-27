@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Query\Builder as Query;
+use Illuminate\Support\Arr;
 use Plank\LaravelPivotEvents\Traits\FiresPivotEventsTrait;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Exceptions\PivotException;
@@ -130,7 +131,9 @@ trait HasPublishablePivot
             'reattached' => $reattached,
         ];
 
-        if ($this->parent->firePivotEvent('pivotDraftSynced', false, $this->getRelationName(), $draftSynced) === false) {
+        $writtenIds = array_merge($draftSynced['draftAttached'], $draftSynced['draftUpdated'], $draftSynced['reattached']);
+
+        if ($this->parent->firePivotEvent('pivotDraftSynced', false, $this->getRelationName(), $draftSynced, Arr::only($idsAttributes, $writtenIds)) === false) {
             return false;
         }
 
