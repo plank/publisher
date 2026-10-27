@@ -246,6 +246,53 @@ describe('Pivot Draft Sync Events', function () {
         expect($eventPayload['pivotIdsAttributes'])->toHaveKey($featured->getKey());
         expect($eventPayload['pivotIdsAttributes'][$featured->getKey()])->toBe(['paywall' => true]);
     });
+
+    it('receives the pivot attributes of attached rows in pivotDraftSynced event', function () {
+        $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $featured = Post::factory()->create();
+
+        $eventPayload = null;
+
+        Post::pivotDraftSynced(function ($model, $relation, $changes, $pivotIdsAttributes) use (&$eventPayload) {
+            $eventPayload = [
+                'changes' => $changes,
+                'pivotIdsAttributes' => $pivotIdsAttributes,
+            ];
+        });
+
+        $post->featured()->sync([$featured->getKey() => ['paywall' => true]]);
+
+        expect($eventPayload['changes']['draftAttached'])->toBe([$featured->getKey()]);
+        expect($eventPayload['pivotIdsAttributes'])->toBe([$featured->getKey() => ['paywall' => true]]);
+    });
+
+    it('does not receive the pivot attributes of detached rows in pivotDraftSynced event', function () {
+        $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+        $detached = Post::factory()->create();
+        $post->featured()->attach($detached->getKey(), ['paywall' => false]);
+
+        $post->status = Status::DRAFT;
+        $post->save();
+
+        $attached = Post::factory()->create();
+
+        $eventPayload = null;
+
+        Post::pivotDraftSynced(function ($model, $relation, $changes, $pivotIdsAttributes) use (&$eventPayload) {
+            $eventPayload = [
+                'changes' => $changes,
+                'pivotIdsAttributes' => $pivotIdsAttributes,
+            ];
+        });
+
+        $post->featured()->sync([$attached->getKey() => ['paywall' => true]]);
+
+        expect($eventPayload['changes']['draftDetached'])->toBe([$detached->getKey()]);
+        expect($eventPayload['pivotIdsAttributes'])->toBe([$attached->getKey() => ['paywall' => true]]);
+    });
 });
 
 describe('Pivot Reattach Events', function () {
