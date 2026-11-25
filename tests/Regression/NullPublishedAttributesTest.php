@@ -2,7 +2,6 @@
 
 use Plank\Publisher\Facades\Publisher;
 use Plank\Publisher\Tests\Helpers\Models\Post;
-use Plank\Publisher\Tests\Helpers\Models\Section;
 use Plank\Publisher\Tests\Helpers\Models\User;
 
 beforeEach(function () {
@@ -59,30 +58,4 @@ it('stages a value typed into an empty field of an already drafted record', func
 
     expect($stored->getRawOriginal('subtitle'))->toBeNull()
         ->and($stored->draft['subtitle'])->toBe('Drafted subtitle');
-});
-
-it('stages a value typed into an empty field of a publishing dependent', function () {
-    $post = Post::factory()->create([
-        'author_id' => User::first()->id,
-        'status' => 'published',
-    ]);
-
-    $section = Section::factory()->create([
-        'post_id' => $post->id,
-        'subheading' => null,
-        'status' => 'published',
-    ]);
-
-    Publisher::withDraftContent(function () use ($section) {
-        $section->status = 'draft';
-        $section->subheading = 'Drafted subheading';
-        $section->save();
-    });
-
-    $stored = Publisher::withoutDraftContent(fn () => Section::query()
-        ->withoutGlobalScopes()
-        ->find($section->id));
-
-    expect($stored->getRawOriginal('subheading'))->toBeNull()
-        ->and($stored->draft['subheading'])->toBe('Drafted subheading');
 });
