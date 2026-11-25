@@ -737,21 +737,25 @@ trait HasPublishablePivot
      */
     public function addEagerConstraints(array $models)
     {
-        parent::addEagerConstraints($models);
+        $allowingDraftContent = Publisher::draftContentAllowed();
 
-        if (Publisher::draftPivotConstraintsRestricted()) {
-            return;
-        }
+        Publisher::withoutDraftContent(function () use ($models, $allowingDraftContent) {
+            parent::addEagerConstraints($models);
 
-        if (Publisher::draftContentAllowed()) {
-            $this->query->where(
-                $this->qualifyPivotColumn(config()->get('publisher.columns.should_delete')), false
-            );
-        } else {
-            $this->query->where(
-                $this->qualifyPivotColumn(config()->get('publisher.columns.has_been_published')), true
-            );
-        }
+            if (Publisher::draftPivotConstraintsRestricted()) {
+                return;
+            }
+
+            if ($allowingDraftContent) {
+                $this->query->where(
+                    $this->qualifyPivotColumn(config()->get('publisher.columns.should_delete')), false
+                );
+            } else {
+                $this->query->where(
+                    $this->qualifyPivotColumn(config()->get('publisher.columns.has_been_published')), true
+                );
+            }
+        });
     }
 
     /**
