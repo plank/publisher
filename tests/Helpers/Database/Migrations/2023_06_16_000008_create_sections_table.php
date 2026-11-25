@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('post_id');
             $table->string('heading');
+            $table->string('subheading')->nullable();
             $table->text('text');
             $table->string('status');
             $table->boolean('has_been_published')->default(false);
