@@ -4,8 +4,10 @@ This guide will walk you through installing and configuring Laravel Publisher in
 
 ## Requirements
 
--   PHP 8.2+
--   Laravel 12.x
+-   Laravel 12.x or 13.x
+-   PHP 8.2+ for Laravel 12, or PHP 8.3+ for Laravel 13
+
+Laravel 10 and 11 are no longer supported. See [Version Support](../../README.md#version-support).
 
 ## Installation Steps
 
@@ -154,7 +156,7 @@ return [
 
 Add the Publisher middleware to your application. This should be placed **before** `SubstituteBindings` in your middleware stack.
 
-### Laravel 11+
+### Laravel 13.x and 12.x
 
 In `bootstrap/app.php`:
 
@@ -178,9 +180,9 @@ Or for specific route groups:
 })
 ```
 
-### Laravel 10
+### Applications that still use `app/Http/Kernel.php`
 
-In `app/Http/Kernel.php`:
+If your application was upgraded from an older Laravel version and still uses the HTTP kernel, add the middleware in `app/Http/Kernel.php`:
 
 ```php
 protected $middlewareGroups = [

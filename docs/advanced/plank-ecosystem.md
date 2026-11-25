@@ -135,20 +135,23 @@ Publisher's dependencies are versioned to match Laravel versions:
 
 | Publisher | Laravel | Dependencies |
 |-----------|---------|--------------|
-| ^1.0 | 12.x | ^12.0 of all packages |
+| ^13.0 | 13.x | ^13 of all Plank packages |
+| ^12.0 | 12.x | ^12 of all Plank packages |
 
-Check `composer.json` for exact version constraints:
+Laravel 10 and 11 (Publisher ^10.0 and ^11.0) are no longer supported. See [Version Support](../../README.md#version-support).
+
+Check `composer.json` for exact version constraints. For Publisher ^13.0:
 
 ```json
 {
     "require": {
-        "php": "^8.2",
-        "illuminate/contracts": "^12",
-        "plank/before-and-after-model-events": "^12.0",
-        "plank/laravel-hush": "^12.1",
-        "plank/laravel-model-resolver": "^12.1.2",
-        "plank/laravel-pivot-events": "^1.0",
-        "plank/laravel-schema-events": "^12.2"
+        "php": "^8.3",
+        "illuminate/contracts": "^13",
+        "plank/before-and-after-model-events": "^13.0",
+        "plank/laravel-hush": "^13.1",
+        "plank/laravel-model-resolver": "^13",
+        "plank/laravel-pivot-events": "^13.1.0",
+        "plank/laravel-schema-events": "^13"
     }
 }
 ```
