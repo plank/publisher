@@ -168,7 +168,7 @@ trait HasPublishableAttributes
 
             if (array_key_exists($key, $this->publishedAttributes)) {
                 $this->attributes[$key] = $this->publishedAttributes[$key];
-            } elseif (isset($this->original[$key])) {
+            } elseif (array_key_exists($key, $this->original)) {
                 $this->attributes[$key] = $this->original[$key];
             }
         }
