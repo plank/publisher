@@ -6,7 +6,7 @@ Publisher includes middleware that controls draft content visibility based on th
 
 Register the middleware in your application. It should be placed **before** `SubstituteBindings`.
 
-### Laravel 11+
+### Laravel 13.x and 12.x
 
 In `bootstrap/app.php`:
 
@@ -30,9 +30,9 @@ Or append to a specific position:
 })
 ```
 
-### Laravel 10
+### Applications that still use `app/Http/Kernel.php`
 
-In `app/Http/Kernel.php`:
+If your application was upgraded from an older Laravel version and still uses the HTTP kernel, add the middleware in `app/Http/Kernel.php`:
 
 ```php
 protected $middlewareGroups = [

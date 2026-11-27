@@ -2,13 +2,26 @@
 
 <p align="center">
 <a href="https://packagist.org/packages/plank/publisher"><img src="https://img.shields.io/packagist/php-v/plank/publisher?color=%23fae370&label=php&logo=php&logoColor=%23fff" alt="PHP Version Support"></a>
-<a href="https://laravel.com/docs/12.x/releases#support-policy"><img src="https://img.shields.io/badge/laravel-12.x-%2343d399?color=%23f1ede9&logo=laravel&logoColor=%23ffffff" alt="Laravel Version Support"></a>
+<a href="https://laravel.com/docs/13.x/releases#support-policy"><img src="https://img.shields.io/badge/laravel-12.x%20%7C%2013.x-%2343d399?color=%23f1ede9&logo=laravel&logoColor=%23ffffff" alt="Laravel Version Support"></a>
 <a href="https://github.com/plank/publisher/actions?query=workflow%3Arun-tests"><img src="https://img.shields.io/github/actions/workflow/status/plank/publisher/run-tests.yml?branch=main&&color=%23bfc9bd&label=run-tests&logo=github&logoColor=%23fff" alt="GitHub Workflow Status"></a>
 </p>
 
 # Laravel Publisher
 
 Publisher is a Laravel package that provides a complete content publishing workflow, allowing you to maintain both published and draft versions of your content simultaneously. Editors can work on changes without affecting the live published version until changes are explicitly published.
+
+## Version Support
+
+Each Publisher major version matches one Laravel major version.
+
+| Laravel | PHP  | Publisher | Status                                |
+| ------- | ---- | --------- | ------------------------------------- |
+| 13.x    | 8.3+ | ^13.0     | Supported                             |
+| 12.x    | 8.2+ | ^12.0     | Supported                             |
+| 11.x    | 8.2+ | ^11.0     | No longer supported (last: v11.12.0)  |
+| 10.x    | 8.2+ | ^10.0     | No longer supported (last: v10.12.0)  |
+
+Laravel 10 and 11 are end-of-life. They have security advisories that will not be fixed, and Composer 2.11 and later blocks every 10.x and 11.x release of `laravel/framework` by default. The existing Publisher releases for these versions stay on Packagist, but they will not get more updates. To keep getting updates, upgrade to Laravel 12 or 13.
 
 ## Installation
 
