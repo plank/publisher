@@ -1,7 +1,9 @@
 <?php
 
+use Plank\Publisher\Concerns\HasPublishableRelationships;
 use Plank\Publisher\Enums\Status;
 use Plank\Publisher\Facades\Publisher;
+use Plank\Publisher\Relations\PublishableMorphToMany;
 use Plank\Publisher\Tests\Helpers\Models\Media;
 use Plank\Publisher\Tests\Helpers\Models\Post;
 
@@ -273,6 +275,82 @@ describe('Publishable pivot filtering is applied during eager loading', function
 
             // With pivot constraints restricted, no filtering is applied
             expect($loaded->featured)->toHaveCount(2);
+        });
+    });
+
+    describe('with the related model drafted', function () {
+        beforeEach(function () {
+            Publisher::allowDraftContent();
+        });
+
+        it('eager loads a publishable belongsToMany the same as lazy loading', function () {
+            $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+            $featured = Post::factory()->create(['status' => Status::PUBLISHED]);
+
+            $post->featured()->attach([$featured->getKey()]);
+
+            $featured->status = Status::DRAFT;
+            $featured->save();
+
+            $lazy = Post::find($post->getKey())->featured;
+            $eager = Post::with('featured')->find($post->getKey())->featured;
+            $loaded = Post::find($post->getKey())->load('featured')->featured;
+
+            expect($lazy->pluck('id')->all())->toBe([$featured->id]);
+            expect($eager->pluck('id')->all())->toBe([$featured->id]);
+            expect($loaded->pluck('id')->all())->toBe([$featured->id]);
+        });
+
+        it('still filters pivots marked for deletion', function () {
+            $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+            $kept = Post::factory()->create(['status' => Status::PUBLISHED]);
+            $detached = Post::factory()->create(['status' => Status::PUBLISHED]);
+
+            $post->featured()->attach([$kept->getKey(), $detached->getKey()]);
+
+            $post->status = Status::DRAFT;
+            $post->save();
+
+            $post->featured()->detach([$detached->getKey()]);
+
+            foreach ([$kept, $detached] as $related) {
+                $related->status = Status::DRAFT;
+                $related->save();
+            }
+
+            $loaded = Post::with('featured')->find($post->getKey());
+
+            expect($loaded->featured->pluck('id')->all())->toBe([$kept->id]);
+        });
+
+        it('eager loads a publishable morphToMany the same as lazy loading', function () {
+            // Media -> Post through the publishable "mediables" pivot, so the related
+            // model is publishable and the eager query also constrains the morph type.
+            $mediaWithPosts = new class extends Media
+            {
+                use HasPublishableRelationships;
+
+                protected $table = 'media';
+
+                public function mediablePosts(): PublishableMorphToMany
+                {
+                    return $this->publishableMorphToMany(Post::class, 'mediable', 'mediables', 'media_id', 'mediable_id', inverse: true);
+                }
+            };
+
+            $media = $mediaWithPosts->newQuery()->find(Media::factory()->create()->getKey());
+            $post = Post::factory()->create(['status' => Status::PUBLISHED]);
+
+            $media->mediablePosts()->attach([$post->getKey()]);
+
+            $post->status = Status::DRAFT;
+            $post->save();
+
+            $lazy = $mediaWithPosts->newQuery()->find($media->getKey())->mediablePosts;
+            $eager = $mediaWithPosts->newQuery()->with('mediablePosts')->find($media->getKey())->mediablePosts;
+
+            expect($lazy->pluck('id')->all())->toBe([$post->id]);
+            expect($eager->pluck('id')->all())->toBe([$post->id]);
         });
     });
 });

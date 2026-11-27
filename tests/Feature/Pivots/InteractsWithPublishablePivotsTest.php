@@ -87,3 +87,39 @@ it('queries draft models correctly through a pivot correctly while draft content
         expect($posts = $tag->posts()->get())->toHaveCount(1);
     });
 });
+
+it('eager loads drafted models through a morph pivot the same as lazy loading while draft content is allowed', function () {
+    /** @var Tag $tag */
+    $tag = Tag::factory()->create();
+
+    /** @var Post $post */
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $post->tags()->attach([$tag->id]);
+
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    expect(Tag::find($tag->id)->posts->pluck('id')->all())->toBe([$post->id]);
+    expect(Tag::with('posts')->find($tag->id)->posts->pluck('id')->all())->toBe([$post->id]);
+});
+
+it('finds drafted models through a morph pivot in existence queries while draft content is allowed', function () {
+    /** @var Tag $tag */
+    $tag = Tag::factory()->create();
+
+    /** @var Post $post */
+    $post = Post::factory()->create([
+        'status' => Status::PUBLISHED,
+    ]);
+
+    $post->tags()->attach([$tag->id]);
+
+    $post->status = Status::DRAFT;
+    $post->save();
+
+    expect(Tag::whereHas('posts')->pluck('id')->all())->toBe([$tag->id]);
+    expect(Tag::withCount('posts')->find($tag->id)->posts_count)->toBe(1);
+});

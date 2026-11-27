@@ -4,6 +4,7 @@ namespace Plank\Publisher\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Plank\Publisher\Contracts\Publishable;
 use Plank\Publisher\Exceptions\DraftException;
 
@@ -283,8 +284,14 @@ trait HasPublishableAttributes
         return $this->{$this->draftColumn()} ?? [];
     }
 
+    /**
+     * Exclusion lists hold bare column names. A column qualified with this
+     * model's table is checked by its bare name.
+     */
     public function isExcludedFromDraft(string $key): bool
     {
+        $key = Str::chopStart($key, $this->getTable().'.');
+
         if (in_array($key, $this->excludedFromDraftByDefault())) {
             return true;
         }
@@ -309,8 +316,6 @@ trait HasPublishableAttributes
         if (in_array(SoftDeletes::class, class_uses_recursive($this))) {
             $attributes[] = $this->getDeletedAtColumn();
         }
-
-        $attributes = array_merge($attributes, $this->qualifyColumns($attributes));
 
         return $attributes;
     }
